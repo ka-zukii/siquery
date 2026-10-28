@@ -9,7 +9,6 @@ import {
   LOOK_YAW,
   MODEL_BYTES_FALLBACK,
   MODEL_URL,
-  MON,
   ZOOM_MS,
 } from "./desk-scene/desk-scene.config";
 import type {
@@ -49,6 +48,7 @@ export const DeskScene: React.FC<DeskSceneProps> = ({
   });
   const api = useRef<{ zoomOut: () => void } | null>(null);
   const prevPaused = useRef(paused);
+  const macbookPosRef = useRef<THREE.Vector3 | null>(null);
 
   // Saat Desktop ditutup, kamera mundur dari layar kembali ke kursi.
   useEffect(() => {
@@ -140,13 +140,23 @@ export const DeskScene: React.FC<DeskSceneProps> = ({
     const enterMonitor = () => {
       if (s.mode !== "desk") return;
       setHoverLabel(null);
+      const pos = macbookPosRef.current;
+      if (!pos) return;
+
       const tanHalf = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-      const dH = MON.screenH / (2 * tanHalf);
-      const dW = MON.screenW / (2 * tanHalf * camera.aspect);
-      const d = Math.min(dH, dW) * 0.96; // sedikit overscan supaya layar penuh
-      const toPos = new THREE.Vector3(0, MON.cy, MON.z + 0.065 + d);
+      const d = (0.75 / (2 * tanHalf)) * 0.96;
+
+      const screenForward = new THREE.Vector3(0, 0, 1)
+        .applyEuler(new THREE.Euler(-0.1, 0, 0, "YXZ"))
+        .normalize();
+
+      const toPos = pos.clone().addScaledVector(screenForward, d);
+      const tempCam = new THREE.Camera();
+      tempCam.position.copy(toPos);
+      tempCam.lookAt(pos);
+
       s.mode = "zoomIn";
-      startTween(toPos, new THREE.Quaternion(), () => {
+      startTween(toPos, tempCam.quaternion, () => {
         s.mode = "monitor";
         cb.current.onEnterPC();
       });
@@ -260,12 +270,13 @@ export const DeskScene: React.FC<DeskSceneProps> = ({
       }
       if (disposed) return;
 
-      const desk = buildDesk(cb.current.caseData, {
+      const { root, interactables: ints, macPos } = await buildDesk(cb.current.caseData, {
         openDoc: (d: DocContent) => setDoc(d),
         enterPC: enterMonitor,
       });
-      scene.add(desk.root);
-      interactables = desk.interactables;
+      macbookPosRef.current = macPos;
+      scene.add(root);
+      interactables = ints;
       interactables.forEach((i) => {
         byObject.set(i.group, i);
       });

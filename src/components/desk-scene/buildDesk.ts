@@ -1,32 +1,46 @@
 import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type { CaseData } from "../../types/case.types";
-import { DESK, FLOOR_Y, LIGHT, MON, TOP_Y } from "./desk-scene.config";
-import type {
-  DocContent,
-  Handlers,
-  Interactable,
-} from "./types/desk-scene.types";
-import {
-  box,
-  clip,
-  DISPLAY,
-  HAND,
-  makeCanvasTexture,
-  makeHover,
-  MONO,
-  SANS,
-  std,
-  texturedPlane,
-  wrapText,
-} from "./desk-scene.helpers";
+import { DESK, FLOOR_Y, HOME_POS, LIGHT, MACBOOK_MODEL_URL, MON, TOP_Y } from "./desk-scene.config";
+import type { DocContent, Handlers, Interactable } from "./types/desk-scene.types";
+import { box, clip, DISPLAY, HAND, makeCanvasTexture, makeHover, MONO, SANS, std, texturedPlane, wrapText } from "./desk-scene.helpers";
 
-export const buildDesk = (caseData: CaseData, handlers: Handlers) => {
+const loader = new GLTFLoader();
+
+function loadGLB(url: string): Promise<THREE.Group> {
+  return new Promise((resolve, reject) => {
+    loader.load(url, (gltf) => resolve(gltf.scene as THREE.Group), undefined, reject);
+  });
+}
+
+function box3Of(group: THREE.Group): THREE.Box3 {
+  const box = new THREE.Box3();
+  group.traverse((o) => {
+    if (o instanceof THREE.Mesh) box.expandByObject(o);
+  });
+  return box;
+}
+
+function findBodyMesh(group: THREE.Object3D): THREE.Mesh | null {
+  let best: THREE.Mesh | null = null;
+  let bestVolume = 0;
+  group.traverse((o) => {
+    if (!(o instanceof THREE.Mesh)) return;
+    const s = new THREE.Vector3();
+    new THREE.Box3().setFromObject(o).getSize(s);
+    const volume = s.x * s.y * s.z;
+    if (volume > bestVolume) {
+      bestVolume = volume;
+      best = o;
+    }
+  });
+  return best;
+}
+
+export const buildDesk = async (caseData: CaseData, handlers: Handlers) => {
   const root = new THREE.Group();
   const interactables: Interactable[] = [];
-  const hintText =
-    caseData.hints && caseData.hints.length > 0
-      ? caseData.hints[0]
-      : "Mulai dari tabel access_logs.";
+  const hintText = caseData.hints && caseData.hints.length > 0 ? caseData.hints[0] : "Mulai dari tabel access_logs.";
 
   /* ---- Meja ---- */
   const wood = std("#3d2a1b", 0.8);
@@ -35,11 +49,7 @@ export const buildDesk = (caseData: CaseData, handlers: Handlers) => {
   root.add(tabletop);
   [-1, 1].forEach((side) => {
     const leg = box(0.16, DESK.h - 0.16, DESK.d - 0.1, wood);
-    leg.position.set(
-      DESK.x + side * (DESK.w / 2 - 0.1),
-      FLOOR_Y + (DESK.h - 0.16) / 2,
-      DESK.z,
-    );
+    leg.position.set(DESK.x + side * (DESK.w / 2 - 0.1), FLOOR_Y + (DESK.h - 0.16) / 2, DESK.z);
     root.add(leg);
   });
   const back = box(DESK.w - 0.4, 0.9, 0.08, wood);
@@ -50,29 +60,40 @@ export const buildDesk = (caseData: CaseData, handlers: Handlers) => {
   deskMat.position.set(0, TOP_Y + 0.0125, DESK.z + 0.25);
   root.add(deskMat);
 
-  /* ---- Monitor ---- */
-  const monitor = new THREE.Group();
-  const bezel = box(MON.w, MON.h, 0.12, std("#0b1411", 0.5, 0.2));
-  bezel.position.set(0, MON.cy, MON.z);
-  const neck = box(0.22, 0.55, 0.1, std("#101d18", 0.5, 0.3));
-  neck.position.set(0, TOP_Y + 0.275, MON.z - 0.05);
-  const stand = box(1.0, 0.04, 0.6, std("#101d18", 0.5, 0.3));
-  stand.position.set(0, TOP_Y + 0.045, MON.z);
+  /* ---- Macbook di atas meja (gantikan monitor + keyboard) ---- */
+  const macbookScene = await loadGLB(MACBOOK_MODEL_URL);
+  const macbook = macbookScene.clone();
 
+  /* Skala macbook agar sesuai ukuran meja (target lebar ~1.5 unit). */
+  const macBB = box3Of(macbook);
+  const macSize = new THREE.Vector3();
+  macBB.getSize(macSize);
+  const scale = 1.5 / macSize.x;
+  macbook.scale.set(scale, scale, scale);
+  macbook.updateMatrixWorld();
+
+  /* Posisikan di atas permukaan meja. */
+  const macBBWorld = box3Of(macbook);
+  const macCenter = new THREE.Vector3();
+  macBBWorld.getCenter(macCenter);
+  macbook.position.set(DESK.x - macCenter.x, TOP_Y - macBBWorld.min.y + 0.01, DESK.z - macCenter.z);
+  macbook.updateMatrixWorld();
+
+  macbook.traverse((o) => {
+    if (o instanceof THREE.Mesh) {
+      o.castShadow = true;
+      o.receiveShadow = true;
+    }
+  });
+
+  /* ---- Layar macbook dengan tampilan OS (seperti monitor sebelumnya) ---- */
   const screenTex = makeCanvasTexture(1024, 593, (ctx, w, h) => {
     const bg = ctx.createLinearGradient(0, 0, 0, h);
     bg.addColorStop(0, "#0f1b17");
     bg.addColorStop(1, "#08110e");
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, w, h);
-    const glow = ctx.createRadialGradient(
-      w * 0.15,
-      -20,
-      10,
-      w * 0.15,
-      -20,
-      w * 0.7,
-    );
+    const glow = ctx.createRadialGradient(w * 0.15, -20, 10, w * 0.15, -20, w * 0.7);
     glow.addColorStop(0, "rgba(240,184,75,0.28)");
     glow.addColorStop(1, "rgba(240,184,75,0)");
     ctx.fillStyle = glow;
@@ -101,46 +122,48 @@ export const buildDesk = (caseData: CaseData, handlers: Handlers) => {
     ctx.font = `400 20px ${SANS}`;
     ctx.fillText("Tiket tugas menunggu di kotak masuk", w / 2, h * 0.7);
   });
-  const screen = new THREE.Mesh(
-    new THREE.PlaneGeometry(MON.screenW, MON.screenH),
-    new THREE.MeshBasicMaterial({ map: screenTex }),
-  );
-  screen.position.set(0, MON.cy, MON.z + 0.065);
-  monitor.add(bezel, neck, stand, screen);
-  root.add(monitor);
+  // const screenW = 1.2;
+  // const screenH = 0.75;
+  root.add(macbook);
+
+  const lidMesh = findBodyMesh(macbook);
+  if (!lidMesh) throw new Error("Mesh bodi macbook tidak ditemukan");
+  if (!lidMesh) throw new Error("Mesh bodi macbook tidak ditemukan");
+
+  const from = HOME_POS.clone(); // posisi kamera
+  const aim = new THREE.Vector3(DESK.x, TOP_Y + 1.0, DESK.z); // titik tengah tutup, perlu disesuaikan
+  const ray = new THREE.Raycaster(from, aim.clone().sub(from).normalize());
+  const hit = ray.intersectObject(lidMesh, false)[0];
+  if (!hit || !hit.face) throw new Error("Permukaan tutup layar tidak terkena raycast");
+
+  const normal = hit.face.normal.clone().transformDirection(lidMesh.matrixWorld);
+
+  const SCREEN_W = 1.45; // lebar tampilan, naikkan jika kurang lebar
+  const SCREEN_H = 0.95; // tinggi tampilan (sekitar 16:10)
+  const SCREEN_OFFSET_Y = -0.4; // negatif = turun, positif = naik
+
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(SCREEN_W, SCREEN_H), new THREE.MeshBasicMaterial({ map: screenTex, side: THREE.DoubleSide }));
+  screen.position.copy(hit.point).addScaledVector(normal, 0.01);
+  screen.position.y += SCREEN_OFFSET_Y;
+  screen.lookAt(screen.position.clone().add(normal));
+  root.add(screen);
+
+
+  const macPos = screen.getWorldPosition(new THREE.Vector3());
+
   interactables.push({
-    group: monitor,
-    label: "Komputer perpustakaan. Klik untuk masuk.",
+    group: screen,
+    label: "Macbook. Klik layar untuk masuk.",
     action: handlers.enterPC,
-    setHover: makeHover(monitor),
+    setHover: makeHover(screen),
   });
 
-  /* ---- Keyboard & mouse ---- */
-  const kbTex = makeCanvasTexture(512, 192, (ctx, w, h) => {
-    ctx.fillStyle = "#16241f";
-    ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = "#26382f";
-    const rows = [14, 14, 13, 12];
-    rows.forEach((n, r) => {
-      const kw = (w - 24) / n;
-      for (let i = 0; i < n; i++) {
-        ctx.beginPath();
-        ctx.roundRect(12 + i * kw + 2, 14 + r * 42, kw - 4, 34, 5);
-        ctx.fill();
-      }
-    });
+  interactables.push({
+    group: macbook,
+    label: "Macbook. Klik untuk masuk.",
+    action: handlers.enterPC,
+    setHover: makeHover(macbook),
   });
-  const keyboard = box(1.5, 0.07, 0.52, std("#101d18", 0.6, 0.2));
-  keyboard.position.set(0, TOP_Y + 0.025 + 0.035, DESK.z + 0.5);
-  const kbTop = texturedPlane(1.46, 0.48, kbTex);
-  kbTop.rotation.x = -Math.PI / 2;
-  kbTop.position.set(0, 0.037, 0);
-  keyboard.add(kbTop);
-  root.add(keyboard);
-
-  const mouse = box(0.2, 0.06, 0.32, std("#101d18", 0.5, 0.2));
-  mouse.position.set(1.15, TOP_Y + 0.025 + 0.03, DESK.z + 0.5);
-  root.add(mouse);
 
   /* ---- Berkas kasus (map) ---- */
   const folder = new THREE.Group();
@@ -174,7 +197,7 @@ export const buildDesk = (caseData: CaseData, handlers: Handlers) => {
   sheet.rotation.x = -Math.PI / 2;
   sheet.position.y = 0.032;
   folder.add(cover, sheet);
-  folder.position.set(-2.1, TOP_Y + 0.03, DESK.z + 0.35);
+  folder.position.set(-1.45, TOP_Y + 0.03, DESK.z + 0.35);
   folder.rotation.y = 0.18;
   root.add(folder);
   interactables.push({
@@ -238,14 +261,7 @@ export const buildDesk = (caseData: CaseData, handlers: Handlers) => {
   corkBoard.position.set(0, 0, 0);
   board.add(corkBoard, feet);
 
-  const makeSticky = (
-    title: string,
-    text: string,
-    x: number,
-    y: number,
-    rotZ: number,
-    doc: DocContent,
-  ) => {
+  const makeSticky = (title: string, text: string, x: number, y: number, rotZ: number, doc: DocContent) => {
     const tex = makeCanvasTexture(256, 256, (ctx, w, h) => {
       ctx.fillStyle = "#f6d66a";
       ctx.fillRect(0, 0, w, h);
@@ -273,17 +289,10 @@ export const buildDesk = (caseData: CaseData, handlers: Handlers) => {
       setHover: makeHover(g),
     });
   };
-  makeSticky(
-    "Password arsip",
-    "Lihat catatan shift malam.",
-    -0.32,
-    0.18,
-    0.06,
-    {
-      title: "Catatan tempel",
-      body: "Password arsip: lihat catatan shift malam.\n\n— Bu Wati",
-    },
-  );
+  makeSticky("Password arsip", "Lihat catatan shift malam.", -0.32, 0.18, 0.06, {
+    title: "Catatan tempel",
+    body: "Password arsip: lihat catatan shift malam.\n\n— Bu Wati",
+  });
   makeSticky("Petunjuk", hintText, 0.3, -0.12, -0.08, {
     title: "Petunjuk",
     body: hintText,
@@ -303,49 +312,78 @@ export const buildDesk = (caseData: CaseData, handlers: Handlers) => {
   });
 
   /* ---- Lampu meja ---- */
+  const LAMP_X = -2.4;
+  const LAMP_Z = DESK.z - 0.75;
   const lamp = new THREE.Group();
-  const lampMetal = std("#1c2f28", 0.4, 0.6);
-  const lampBase = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.28, 0.32, 0.06, 28),
-    lampMetal,
-  );
-  lampBase.position.y = 0.03;
-  const arm1 = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.035, 0.035, 1.2, 12),
-    lampMetal,
-  );
-  arm1.position.set(0.1, 0.65, 0);
-  arm1.rotation.z = -0.18;
-  const arm2 = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.035, 0.035, 0.95, 12),
-    lampMetal,
-  );
-  arm2.position.set(0.5, 1.2, 0);
-  arm2.rotation.z = Math.PI / 2 - 0.35;
+  const lampMetal = std("#1c2f28", 0.35, 0.7);
+
+  // Batang silinder dari titik a ke titik b
+  const rod = (a: THREE.Vector3, b: THREE.Vector3, r: number) => {
+    const dir = new THREE.Vector3().subVectors(b, a);
+    const len = dir.length();
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 16), lampMetal);
+    m.position.copy(a).addScaledVector(dir, 0.5);
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+    m.castShadow = true;
+    lamp.add(m);
+  };
+
+  // Sendi bulat di sambungan batang
+  const joint = (p: THREE.Vector3, r: number) => {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 12), lampMetal);
+    m.position.copy(p);
+    m.castShadow = true;
+    lamp.add(m);
+  };
+
+  // Dasar lampu
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 0.06, 40), lampMetal);
+  base.position.y = 0.03;
+  base.castShadow = true;
+  base.receiveShadow = true;
+  lamp.add(base);
+
+  // Titik-titik sambungan lengan
+  const J1 = new THREE.Vector3(0, 0.95, 0); // bahu (di atas tiang)
+  const J2 = new THREE.Vector3(0.6, 1.5, 0); // siku
+  const H = new THREE.Vector3(1.15, 1.25, 0); // kepala lampu
+
+  rod(new THREE.Vector3(0, 0.06, 0), J1, 0.03); // tiang
+  rod(J1, J2, 0.025); // lengan atas
+  rod(J2, H, 0.025); // lengan bawah
+  joint(J1, 0.05);
+  joint(J2, 0.04);
+
+  // Kepala lampu, dimiringkan sedikit ke arah meja
+  const head = new THREE.Group();
+  head.position.copy(H);
+  head.rotation.z = 0.25;
+
   const shade = new THREE.Mesh(
-    new THREE.ConeGeometry(0.3, 0.42, 28, 1, true),
+    new THREE.ConeGeometry(0.3, 0.34, 40, 1, true),
     new THREE.MeshStandardMaterial({
       color: "#f0b84b",
-      roughness: 0.5,
-      metalness: 0.3,
+      roughness: 0.45,
+      metalness: 0.25,
       side: THREE.DoubleSide,
     }),
   );
-  shade.position.set(0.9, 1.22, 0);
-  shade.rotation.z = -0.35;
-  const bulb = new THREE.Mesh(
-    new THREE.SphereGeometry(0.11, 16, 12),
-    new THREE.MeshBasicMaterial({ color: 0xffd48a }),
-  );
-  bulb.position.set(0.88, 1.1, 0);
-  [lampBase, arm1, arm2, shade].forEach((m) => (m.castShadow = true));
-  lamp.add(lampBase, arm1, arm2, shade, bulb);
-  lamp.position.set(-2.25, TOP_Y, DESK.z - 0.3);
+  shade.position.set(0, -0.05, 0);
+  shade.castShadow = true;
+
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffe2a8 }));
+  bulb.position.set(0, -0.12, 0);
+
+  head.add(shade, bulb);
+  lamp.add(head);
+
+  lamp.position.set(LAMP_X, TOP_Y, LAMP_Z);
   root.add(lamp);
 
-  const lampLight = new THREE.SpotLight(0xffc46b, LIGHT.lamp, 0, 0.75, 0.7, 2);
-  lampLight.position.set(-2.25 + 0.88, TOP_Y + 1.05, DESK.z - 0.3);
-  lampLight.target.position.set(-0.6, TOP_Y, DESK.z + 0.4);
+  // Cahaya dari bohlam, diarahkan ke area berkas
+  const lampLight = new THREE.SpotLight(0xffc46b, LIGHT.lamp, 0, 0.9, 0.7, 2);
+  lampLight.position.set(LAMP_X + H.x, TOP_Y + H.y - 0.15, LAMP_Z);
+  lampLight.target.position.set(-1.35, TOP_Y, DESK.z + 0.25);
   lampLight.castShadow = true;
   lampLight.shadow.mapSize.set(1024, 1024);
   lampLight.shadow.bias = -0.0005;
@@ -356,5 +394,5 @@ export const buildDesk = (caseData: CaseData, handlers: Handlers) => {
   glow.position.set(0, MON.cy, MON.z + 0.6);
   root.add(glow);
 
-  return { root, interactables };
+  return { root, interactables, macPos };
 };

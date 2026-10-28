@@ -3,6 +3,8 @@ import * as THREE from "three";
 // Taruh file di: public/models/library.glb
 export const MODEL_URL = `${import.meta.env.BASE_URL}models/library.glb`;
 export const MODEL_BYTES_FALLBACK = 10_404_716;
+export const MACBOOK_MODEL_URL = `${import.meta.env.BASE_URL}models/macbook.glb`;
+export const FOLDER_MODEL_URL = `${import.meta.env.BASE_URL}models/document_file_folder.glb`;
 
 // Skala model: pintu setinggi ±4.5 unit, jadi 1 unit ≈ 0.47 m.
 // Semua ukuran meja di bawah sudah disesuaikan dengan skala itu.
