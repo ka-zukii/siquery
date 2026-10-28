@@ -10,9 +10,19 @@ export interface DeskSceneProps {
   onBack: () => void;
 }
 
+export interface DocPage {
+  tag: string;
+  title: string;
+  body: string;
+  kind: "briefing" | "clue" | "hint" | "status";
+  stamp?: string;
+}
+
 export interface DocContent {
   title: string;
   body: string;
+  /** halaman tambahan yang bisa digeser (clue, petunjuk) */
+  pages?: DocPage[];
 }
 
 export type Mode = "desk" | "zoomIn" | "monitor" | "zoomOut";
@@ -48,4 +58,5 @@ export interface Interactable {
 export interface Handlers {
   openDoc: (doc: DocContent) => void;
   enterPC: () => void;
+  isSolved: () => boolean;
 }

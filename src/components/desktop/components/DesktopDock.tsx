@@ -6,6 +6,7 @@ import {
   DOCK_BASE,
   dockScale,
   ExitIcon,
+  DockGlyph,
 } from "../constants/desktop.constants";
 
 type WindowsState = ReturnType<typeof useWindowManager>["windows"];
@@ -53,7 +54,7 @@ export const DesktopDock: React.FC<DesktopDockProps> = ({
               }}
               className="flex cursor-pointer items-center justify-center rounded-[22%] border border-black/25 leading-none shadow-[0_6px_14px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.35)] transition-[width,height,font-size] duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lamp motion-reduce:transition-none"
             >
-              <span aria-hidden="true">{app.icon}</span>
+              <DockGlyph icon={app.icon} color={app.glyphColor} />
             </button>
             {/* Titik penanda aplikasi yang sedang terbuka */}
             <span

@@ -19,6 +19,8 @@ import type {
 } from "./desk-scene/types/desk-scene.types";
 import { buildDesk } from "./desk-scene/buildDesk";
 import { easeInOutCubic } from "./desk-scene/desk-scene.helpers";
+import { DocViewer } from "./DocViewer";
+import { useDb } from "../context/DatabaseContext";
 
 export const DeskScene: React.FC<DeskSceneProps> = ({
   caseData,
@@ -32,6 +34,9 @@ export const DeskScene: React.FC<DeskSceneProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [hoverLabel, setHoverLabel] = useState<string | null>(null);
   const [doc, setDoc] = useState<DocContent | null>(null);
+  const { solved } = useDb();
+  const solvedRef = useRef(solved);
+  solvedRef.current = solved;
 
   const cb = useRef({ onEnterPC, caseData });
   cb.current = { onEnterPC, caseData };
@@ -270,9 +275,14 @@ export const DeskScene: React.FC<DeskSceneProps> = ({
       }
       if (disposed) return;
 
-      const { root, interactables: ints, macPos } = await buildDesk(cb.current.caseData, {
+      const {
+        root,
+        interactables: ints,
+        macPos,
+      } = await buildDesk(cb.current.caseData, {
         openDoc: (d: DocContent) => setDoc(d),
         enterPC: enterMonitor,
+        isSolved: () => solvedRef.current,
       });
       macbookPosRef.current = macPos;
       scene.add(root);
@@ -417,34 +427,7 @@ export const DeskScene: React.FC<DeskSceneProps> = ({
       )}
 
       {/* Pembaca dokumen */}
-      {doc && (
-        <div
-          className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 p-6"
-          onClick={() => setDoc(null)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label={doc.title}
-            onClick={(e) => e.stopPropagation()}
-            className="max-h-full w-full max-w-lg overflow-y-auto rounded-[10px] bg-paper p-7 text-ink shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
-          >
-            <h3 className="font-display text-2xl font-bold leading-snug">
-              {doc.title}
-            </h3>
-            <div className="my-4 border-t border-dashed border-ink/30" />
-            <p className="whitespace-pre-line text-[15px] leading-relaxed text-ink/90">
-              {doc.body}
-            </p>
-            <button
-              onClick={() => setDoc(null)}
-              className={`mt-6 rounded-xl bg-ink px-5 py-2.5 text-[14px] font-semibold text-paper transition hover:bg-[#2b352f] ${focusRing}`}
-            >
-              Tutup
-            </button>
-          </div>
-        </div>
-      )}
+      {doc && <DocViewer doc={doc} onClose={() => setDoc(null)} />}
     </div>
   );
 };

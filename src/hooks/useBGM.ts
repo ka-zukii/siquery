@@ -1,8 +1,9 @@
 // hooks/useBGM.ts
 import { useEffect, useRef } from "react";
+import { getAudioSettings, useAudioSettings } from "./audioSettings";
 
 interface BgmOptions {
-  /** Volume akhir 0..1 */
+  /** Volume akhir 0..1 (sebelum dikali pengaturan pemain) */
   volume?: number;
   fadeInMs?: number;
   fadeOutMs?: number;
@@ -33,6 +34,7 @@ const fade = (
 /**
  * Musik latar yang berputar selama `active` bernilai true.
  * - Masuk dengan fade in, keluar dengan fade out lalu berhenti.
+ * - Volume mengikuti pengaturan "Musik latar" dan langsung berubah saat digeser.
  * - Browser memblokir suara sebelum pemain berinteraksi dengan halaman,
  *   jadi bila pemutaran awal ditolak, musik dimulai pada klik atau
  *   tekan tombol pertama.
@@ -43,6 +45,8 @@ export const useBgm = (
   { volume = 0.4, fadeInMs = 1500, fadeOutMs = 600 }: BgmOptions = {},
 ) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Hanya dipakai untuk memicu render ulang saat slider berubah
+  const bgmLevel = useAudioSettings().bgm;
 
   useEffect(() => {
     if (!audioRef.current) {
@@ -59,12 +63,14 @@ export const useBgm = (
     let removeUnlock = () => {};
 
     if (active) {
+      const target = volume * getAudioSettings().bgm;
+
       const tryPlay = () =>
         audio.play().then(
           () => {
             if (cancelled) return false;
             cancelFade();
-            cancelFade = fade(audio, volume, fadeInMs);
+            cancelFade = fade(audio, target, fadeInMs);
             return true;
           },
           () => false,
@@ -95,6 +101,14 @@ export const useBgm = (
       removeUnlock();
     };
   }, [src, active, volume, fadeInMs, fadeOutMs]);
+
+  // Ubah volume langsung saat slider digeser (musik sedang berputar)
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio && !audio.paused) {
+      audio.volume = volume * bgmLevel;
+    }
+  }, [bgmLevel, volume]);
 
   // Berhenti total saat komponen dilepas
   useEffect(

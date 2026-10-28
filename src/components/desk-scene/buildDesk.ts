@@ -1,15 +1,39 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type { CaseData } from "../../types/case.types";
-import { DESK, FLOOR_Y, HOME_POS, LIGHT, MACBOOK_MODEL_URL, MON, TOP_Y } from "./desk-scene.config";
-import type { DocContent, Handlers, Interactable } from "./types/desk-scene.types";
-import { box, clip, DISPLAY, HAND, makeCanvasTexture, makeHover, MONO, SANS, std, texturedPlane, wrapText } from "./desk-scene.helpers";
+import {
+  DESK,
+  FLOOR_Y,
+  HOME_POS,
+  LIGHT,
+  MACBOOK_MODEL_URL,
+  MON,
+  TOP_Y,
+} from "./desk-scene.config";
+import type { Handlers, Interactable, DocPage } from "./types/desk-scene.types";
+import {
+  box,
+  clip,
+  DISPLAY,
+  makeCanvasTexture,
+  makeHover,
+  MONO,
+  SANS,
+  std,
+  texturedPlane,
+  wrapText,
+} from "./desk-scene.helpers";
 
 const loader = new GLTFLoader();
 
 function loadGLB(url: string): Promise<THREE.Group> {
   return new Promise((resolve, reject) => {
-    loader.load(url, (gltf) => resolve(gltf.scene as THREE.Group), undefined, reject);
+    loader.load(
+      url,
+      (gltf) => resolve(gltf.scene as THREE.Group),
+      undefined,
+      reject,
+    );
   });
 }
 
@@ -40,7 +64,6 @@ function findBodyMesh(group: THREE.Object3D): THREE.Mesh | null {
 export const buildDesk = async (caseData: CaseData, handlers: Handlers) => {
   const root = new THREE.Group();
   const interactables: Interactable[] = [];
-  const hintText = caseData.hints && caseData.hints.length > 0 ? caseData.hints[0] : "Mulai dari tabel access_logs.";
 
   /* ---- Meja ---- */
   const wood = std("#3d2a1b", 0.8);
@@ -49,7 +72,11 @@ export const buildDesk = async (caseData: CaseData, handlers: Handlers) => {
   root.add(tabletop);
   [-1, 1].forEach((side) => {
     const leg = box(0.16, DESK.h - 0.16, DESK.d - 0.1, wood);
-    leg.position.set(DESK.x + side * (DESK.w / 2 - 0.1), FLOOR_Y + (DESK.h - 0.16) / 2, DESK.z);
+    leg.position.set(
+      DESK.x + side * (DESK.w / 2 - 0.1),
+      FLOOR_Y + (DESK.h - 0.16) / 2,
+      DESK.z,
+    );
     root.add(leg);
   });
   const back = box(DESK.w - 0.4, 0.9, 0.08, wood);
@@ -76,7 +103,11 @@ export const buildDesk = async (caseData: CaseData, handlers: Handlers) => {
   const macBBWorld = box3Of(macbook);
   const macCenter = new THREE.Vector3();
   macBBWorld.getCenter(macCenter);
-  macbook.position.set(DESK.x - macCenter.x, TOP_Y - macBBWorld.min.y + 0.01, DESK.z - macCenter.z);
+  macbook.position.set(
+    DESK.x - macCenter.x,
+    TOP_Y - macBBWorld.min.y + 0.01,
+    DESK.z - macCenter.z,
+  );
   macbook.updateMatrixWorld();
 
   macbook.traverse((o) => {
@@ -93,7 +124,14 @@ export const buildDesk = async (caseData: CaseData, handlers: Handlers) => {
     bg.addColorStop(1, "#08110e");
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, w, h);
-    const glow = ctx.createRadialGradient(w * 0.15, -20, 10, w * 0.15, -20, w * 0.7);
+    const glow = ctx.createRadialGradient(
+      w * 0.15,
+      -20,
+      10,
+      w * 0.15,
+      -20,
+      w * 0.7,
+    );
     glow.addColorStop(0, "rgba(240,184,75,0.28)");
     glow.addColorStop(1, "rgba(240,184,75,0)");
     ctx.fillStyle = glow;
@@ -134,20 +172,25 @@ export const buildDesk = async (caseData: CaseData, handlers: Handlers) => {
   const aim = new THREE.Vector3(DESK.x, TOP_Y + 1.0, DESK.z); // titik tengah tutup, perlu disesuaikan
   const ray = new THREE.Raycaster(from, aim.clone().sub(from).normalize());
   const hit = ray.intersectObject(lidMesh, false)[0];
-  if (!hit || !hit.face) throw new Error("Permukaan tutup layar tidak terkena raycast");
+  if (!hit || !hit.face)
+    throw new Error("Permukaan tutup layar tidak terkena raycast");
 
-  const normal = hit.face.normal.clone().transformDirection(lidMesh.matrixWorld);
+  const normal = hit.face.normal
+    .clone()
+    .transformDirection(lidMesh.matrixWorld);
 
   const SCREEN_W = 1.45; // lebar tampilan, naikkan jika kurang lebar
   const SCREEN_H = 0.95; // tinggi tampilan (sekitar 16:10)
   const SCREEN_OFFSET_Y = -0.4; // negatif = turun, positif = naik
 
-  const screen = new THREE.Mesh(new THREE.PlaneGeometry(SCREEN_W, SCREEN_H), new THREE.MeshBasicMaterial({ map: screenTex, side: THREE.DoubleSide }));
+  const screen = new THREE.Mesh(
+    new THREE.PlaneGeometry(SCREEN_W, SCREEN_H),
+    new THREE.MeshBasicMaterial({ map: screenTex, side: THREE.DoubleSide }),
+  );
   screen.position.copy(hit.point).addScaledVector(normal, 0.01);
   screen.position.y += SCREEN_OFFSET_Y;
   screen.lookAt(screen.position.clone().add(normal));
   root.add(screen);
-
 
   const macPos = screen.getWorldPosition(new THREE.Vector3());
 
@@ -203,11 +246,38 @@ export const buildDesk = async (caseData: CaseData, handlers: Handlers) => {
   interactables.push({
     group: folder,
     label: "Berkas kasus. Klik untuk membaca.",
-    action: () =>
+    action: () => {
+      const pages: DocPage[] = [
+        ...(caseData.clues ?? []).map((c) => ({
+          tag: `${c.category === "evidence" ? "Barang bukti" : "Dokumen"} · ${c.dateOrTag}`,
+          title: c.title,
+          body: c.content,
+          kind: "clue" as const,
+        })),
+        ...caseData.hints.map((h, i) => ({
+          tag: `Petunjuk ${i + 1}`,
+          title: "Petunjuk",
+          body: h,
+          kind: "hint" as const,
+        })),
+      ];
+      if (handlers.isSolved()) {
+        pages.push({
+          tag: "Status",
+          title: "Kasus ditutup",
+          body:
+            caseData.report?.successMessage ??
+            "Hasil kueri sudah sesuai dengan target tugas.",
+          kind: "status",
+          stamp: caseData.report ? "DITERIMA" : "TERPECAHKAN",
+        });
+      }
       handlers.openDoc({
         title: `Berkas kasus: ${caseData.title}`,
         body: String(caseData.briefing),
-      }),
+        pages,
+      });
+    },
     setHover: makeHover(folder),
   });
 
@@ -253,55 +323,6 @@ export const buildDesk = async (caseData: CaseData, handlers: Handlers) => {
     setHover: makeHover(idCard),
   });
 
-  /* ---- Papan memo dengan catatan tempel ---- */
-  const board = new THREE.Group();
-  const corkBoard = box(1.35, 1.0, 0.06, std("#6a4a2e", 0.95));
-  const feet = box(1.35, 0.06, 0.3, std("#3d2a1b", 0.8));
-  feet.position.set(0, -0.53, 0.12);
-  corkBoard.position.set(0, 0, 0);
-  board.add(corkBoard, feet);
-
-  const makeSticky = (title: string, text: string, x: number, y: number, rotZ: number, doc: DocContent) => {
-    const tex = makeCanvasTexture(256, 256, (ctx, w, h) => {
-      ctx.fillStyle = "#f6d66a";
-      ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = "rgba(0,0,0,0.06)";
-      ctx.fillRect(0, 0, w, 22);
-      ctx.fillStyle = "#3b2f08";
-      ctx.textAlign = "left";
-      ctx.textBaseline = "alphabetic";
-      ctx.font = `700 26px ${HAND}`;
-      ctx.fillText(title, 18, 56);
-      ctx.font = `500 22px ${HAND}`;
-      wrapText(ctx, clip(text, 70), 18, 92, w - 36, 28);
-    });
-    const note = texturedPlane(0.5, 0.5, tex);
-    note.position.set(x, y, 0.035);
-    note.rotation.z = rotZ;
-    note.castShadow = true;
-    const g = new THREE.Group();
-    g.add(note);
-    board.add(g);
-    interactables.push({
-      group: g,
-      label: `${title}. Klik untuk membaca.`,
-      action: () => handlers.openDoc(doc),
-      setHover: makeHover(g),
-    });
-  };
-  makeSticky("Password arsip", "Lihat catatan shift malam.", -0.32, 0.18, 0.06, {
-    title: "Catatan tempel",
-    body: "Password arsip: lihat catatan shift malam.\n\n— Bu Wati",
-  });
-  makeSticky("Petunjuk", hintText, 0.3, -0.12, -0.08, {
-    title: "Petunjuk",
-    body: hintText,
-  });
-
-  board.position.set(2.05, TOP_Y + 0.85, DESK.z - 0.6);
-  board.rotation.y = -0.18;
-  root.add(board);
-
   /* ---- Tumpukan buku (dekorasi) ---- */
   const bookColors = ["#2f6b57", "#a8462f", "#d9a640"];
   bookColors.forEach((c, i) => {
@@ -321,9 +342,15 @@ export const buildDesk = async (caseData: CaseData, handlers: Handlers) => {
   const rod = (a: THREE.Vector3, b: THREE.Vector3, r: number) => {
     const dir = new THREE.Vector3().subVectors(b, a);
     const len = dir.length();
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 16), lampMetal);
+    const m = new THREE.Mesh(
+      new THREE.CylinderGeometry(r, r, len, 16),
+      lampMetal,
+    );
     m.position.copy(a).addScaledVector(dir, 0.5);
-    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+    m.quaternion.setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0),
+      dir.normalize(),
+    );
     m.castShadow = true;
     lamp.add(m);
   };
@@ -337,7 +364,10 @@ export const buildDesk = async (caseData: CaseData, handlers: Handlers) => {
   };
 
   // Dasar lampu
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 0.06, 40), lampMetal);
+  const base = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.22, 0.3, 0.06, 40),
+    lampMetal,
+  );
   base.position.y = 0.03;
   base.castShadow = true;
   base.receiveShadow = true;
@@ -371,7 +401,10 @@ export const buildDesk = async (caseData: CaseData, handlers: Handlers) => {
   shade.position.set(0, -0.05, 0);
   shade.castShadow = true;
 
-  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffe2a8 }));
+  const bulb = new THREE.Mesh(
+    new THREE.SphereGeometry(0.08, 16, 12),
+    new THREE.MeshBasicMaterial({ color: 0xffe2a8 }),
+  );
   bulb.position.set(0, -0.12, 0);
 
   head.add(shade, bulb);

@@ -4,6 +4,8 @@ import { SiQueryStudio } from "../../SiQueryStudio";
 import type { CaseData } from "../../../types/case.types";
 import type { useWindowManager } from "../../../hooks/useWindowManager";
 import { DOCK_CLEARANCE } from "../constants/desktop.constants";
+import { NotepadApp } from "./Notepad";
+import { ReportApp } from "./ReportApp";
 
 type WindowsState = ReturnType<typeof useWindowManager>["windows"];
 
@@ -94,10 +96,21 @@ export const DesktopAppWindows: React.FC<DesktopAppWindowsProps> = ({
       onMinimize={() => minimizeWindow("notepad")}
       onFocus={() => focusWindow("notepad")}
     >
-      <textarea
-        className="h-full w-full resize-none bg-sticky p-5 font-['Marker_Felt','Noteworthy',sans-serif] text-base leading-relaxed text-[#3b2f08] placeholder:text-[#3b2f08]/50 focus:outline-none"
-        placeholder="Tulis catatan petunjuk investigasi di sini..."
-      />
+      <NotepadApp />
+    </OSWindow>
+
+    {/* Laporkan Kasus */}
+    <OSWindow
+      windowState={windows["report"]}
+      isActive={activeId === "report"}
+      bottomInset={DOCK_CLEARANCE}
+      defaultPosition={{ x: 160, y: 70 }}
+      defaultSize={{ width: "560px", height: "520px" }}
+      onClose={() => onClose("report")}
+      onMinimize={() => minimizeWindow("report")}
+      onFocus={() => focusWindow("report")}
+    >
+      <ReportApp report={caseData.report} caseTitle={caseData.title} />
     </OSWindow>
   </main>
 );

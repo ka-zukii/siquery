@@ -1,20 +1,21 @@
-import React, { useEffect, useState } from "react";
-import type { CaseData } from "../types/case.types";
+import React, { useEffect, useRef, useState } from "react";
+import { CASES, UPCOMING_CHAPTERS, caseToChapter } from "../cases";
 import type { Chapter } from "./main-menu/types";
 import { TerminalPreview } from "./main-menu/components/TerminalPreview";
 import { CatalogCard } from "./main-menu/components/CatalogCard";
 import { FONT_IMPORT, LOCAL_CSS, FOCUS } from "./main-menu/constants/styles";
+import { useSound } from "../hooks/useSound";
+import { AudioSettingsPanel } from "./main-menu/components/AudioSettingsPanel";
 
 /* ------------------------------------------------------------------ */
 /* Tipe & data                                                         */
 /* ------------------------------------------------------------------ */
 
 interface MainMenuProps {
-  caseData: CaseData;
-  onStartCase: () => void;
+  onStartCase: (caseId: string) => void;
 }
 
-type ViewState = "main" | "chapters" | "howto" | "credits";
+type ViewState = "main" | "chapters" | "howto" | "settings" | "credits";
 
 /* ------------------------------------------------------------------ */
 /* CSS lokal: font, kursor, dan penghormatan terhadap reduced motion    */
@@ -42,43 +43,17 @@ type ViewState = "main" | "chapters" | "howto" | "credits";
 /* Komponen utama                                                       */
 /* ------------------------------------------------------------------ */
 
-export const MainMenu: React.FC<MainMenuProps> = ({
-  caseData,
-  onStartCase,
-}) => {
+export const MainMenu: React.FC<MainMenuProps> = ({ onStartCase }) => {
   const [currentView, setCurrentView] = useState<ViewState>("main");
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
+  const { playSound } = useSound();
+  const prevChapterIndexRef = useRef(currentChapterIndex);
 
+  // Semua chapter diurutkan berdasarkan nomornya
   const chapters: Chapter[] = [
-    {
-      id: "01-missing-manuscript",
-      number: "01",
-      title: caseData.title,
-      subtitle: "Chapter 01: The Missing Manuscript",
-      date: caseData.date,
-      location: "Perpustakaan Universitas",
-      level: 2,
-      levelLabel: "Dasar sampai menengah",
-      description:
-        "Manuskrip kuno abad ke-15 'Codex Nusantara' lenyap tanpa jejak kerusakan fisik dari Ruang Koleksi Khusus. Periksa berkas di meja dan telusuri database perpustakaan untuk menemukan pelakunya.",
-      skills: ["SELECT", "WHERE", "JOIN"],
-      isAvailable: true,
-    },
-    {
-      id: "02-server-sabotage",
-      number: "02",
-      title: "SiQuery: Server Room Sabotage",
-      subtitle: "Chapter 02: Server Room Sabotage",
-      date: "Segera hadir",
-      location: "Pusat Data Universitas",
-      level: 3,
-      levelLabel: "Menengah",
-      description:
-        "Sistem penilaian akademik lumpuh akibat serangan siber tengah malam. Cari tahu orang dalam yang membocorkan kredensial server.",
-      skills: ["GROUP BY", "HAVING", "SUBQUERY"],
-      isAvailable: false,
-    },
-  ];
+    ...CASES.map(caseToChapter),
+    ...UPCOMING_CHAPTERS,
+  ].sort((a, b) => a.number.localeCompare(b.number));
 
   const total = chapters.length;
   const currentChapter = chapters[currentChapterIndex];
@@ -87,7 +62,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   const goNext = () => setCurrentChapterIndex((i) => (i + 1) % total);
 
   const handlePlaySelected = () => {
-    if (currentChapter.isAvailable) onStartCase();
+    if (currentChapter.isAvailable) onStartCase(currentChapter.id);
   };
 
   // Navigasi keyboard
@@ -105,6 +80,14 @@ export const MainMenu: React.FC<MainMenuProps> = ({
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentView, total]);
+
+  // Bunyi slide setiap kartu katalog berpindah (tombol, panah keyboard,
+  // tab nomor, atau klik kartu). Ref dipakai agar tidak berbunyi saat mount.
+  useEffect(() => {
+    if (prevChapterIndexRef.current === currentChapterIndex) return;
+    prevChapterIndexRef.current = currentChapterIndex;
+    playSound("slide", { durationMs: 500 });
+  }, [currentChapterIndex]);
 
   const primaryBtn = `sq-sans inline-flex items-center justify-center rounded-xl bg-[#f0b84b] px-6 py-3.5 text-[15px] font-semibold text-[#1d1608] shadow-[0_10px_30px_rgba(240,184,75,0.25)] transition hover:bg-[#f6c765] active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none disabled:hover:bg-[#f0b84b] ${FOCUS}`;
   const ghostBtn = `sq-sans inline-flex items-center justify-center rounded-xl border border-[#efe6d0]/25 px-5 py-3.5 text-[15px] font-medium text-[#efe6d0] transition hover:border-[#efe6d0]/55 hover:bg-[#efe6d0]/5 ${FOCUS}`;
@@ -172,6 +155,13 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                 >
                   <span>Cara bermain</span>
                   <span className="text-[13px] opacity-60">4 langkah</span>
+                </button>
+                <button
+                  onClick={() => setCurrentView("settings")}
+                  className={`${ghostBtn} justify-between text-left gap-2`}
+                >
+                  <span>Pengaturan</span>
+                  <span className="text-[13px] opacity-60">Suara</span>
                 </button>
                 <button
                   onClick={() => setCurrentView("credits")}
@@ -362,6 +352,14 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                 Kembali ke menu
               </button>
             </div>
+          </main>
+        )}
+
+        {/* ================= PENGATURAN ================= */}
+        {currentView === "settings" && (
+          <main className="my-auto flex flex-col gap-8 py-8">
+            <header>{Wordmark}</header>
+            <AudioSettingsPanel onBack={() => setCurrentView("main")} />
           </main>
         )}
 

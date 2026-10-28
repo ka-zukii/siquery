@@ -5,7 +5,7 @@ const Highlighted: React.FC<{ text: string }> = ({ text }) => (
   <>
     {text.split(SQL_KEYWORDS).map((part, i) =>
       i % 2 === 1 ? (
-        <span key={i} className="text-[#f0b84b]">
+        <span key={i} className="text-lamp">
           {part}
         </span>
       ) : (
@@ -43,7 +43,7 @@ export const TerminalPreview: React.FC = () => {
   return (
     <div className="relative">
       {/* Bingkai monitor */}
-      <div className="rounded-[22px] border border-[#2c3f37] bg-[#15231e] p-3 shadow-[0_30px_70px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.05)]">
+      <div className="rounded-[22px] border border-[#2c3f37] bg-panel p-3 shadow-[0_30px_70px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.05)]">
         <div className="flex items-center justify-between px-2 pb-2.5 pt-0.5">
           <span className="sq-sans text-[12px] font-medium text-[#8fa89d]">
             Sistem Perpustakaan Kampus
@@ -51,22 +51,22 @@ export const TerminalPreview: React.FC = () => {
           <span className="flex gap-1.5" aria-hidden="true">
             <i className="h-2 w-2 rounded-full bg-[#2c3f37]" />
             <i className="h-2 w-2 rounded-full bg-[#2c3f37]" />
-            <i className="h-2 w-2 rounded-full bg-[#f0b84b]/80" />
+            <i className="h-2 w-2 rounded-full bg-lamp/80" />
           </span>
         </div>
 
-        <div className="rounded-xl bg-[#08110e] p-4 shadow-[inset_0_0_40px_rgba(0,0,0,0.7)]">
+        <div className="rounded-xl bg-screen p-4 shadow-[inset_0_0_40px_rgba(0,0,0,0.7)]">
           <p className="sq-sans mb-3 min-h-[2.5em] text-[12px] leading-snug text-[#7f9a8e]">
             {q.ticket}
           </p>
 
           <pre
-            className="sq-mono min-h-30 whitespace-pre-wrap text-[13px] leading-relaxed text-[#9be8c9]"
+            className="sq-mono min-h-30 whitespace-pre-wrap text-[13px] leading-relaxed text-phosphor"
             aria-label="Contoh kueri SQL"
           >
             <Highlighted text={q.sql.slice(0, typed)} />
             <span
-              className={`ml-px inline-block h-[1.05em] w-[0.55em] translate-y-[0.2em] bg-[#9be8c9] ${done ? "sq-caret" : ""}`}
+              className={`ml-px inline-block h-[1.05em] w-[0.55em] translate-y-[0.2em] bg-phosphor ${done ? "sq-caret" : ""}`}
             />
           </pre>
 
@@ -95,7 +95,7 @@ export const TerminalPreview: React.FC = () => {
                 ))}
               </tbody>
             </table>
-            <p className="sq-sans mt-2 text-[11px] text-[#f0b84b]">
+            <p className="sq-sans mt-2 text-[11px] text-lamp">
               Data cocok dengan target tiket
             </p>
           </div>
@@ -104,13 +104,13 @@ export const TerminalPreview: React.FC = () => {
 
       {/* Dudukan monitor */}
       <div
-        className="mx-auto h-3 w-24 rounded-b-md bg-[#15231e] shadow-[0_8px_20px_rgba(0,0,0,0.5)]"
+        className="mx-auto h-3 w-24 rounded-b-md bg-panel shadow-[0_8px_20px_rgba(0,0,0,0.5)]"
         aria-hidden="true"
       />
 
       {/* Catatan tempel */}
       <div
-        className="sq-sans absolute -bottom-6 -left-3 w-40 rotate-[-5deg] bg-[#f6d66a] p-3 text-[12px] leading-snug text-[#3b2f08] shadow-[0_10px_20px_rgba(0,0,0,0.45)] sm:-left-8"
+        className="sq-sans absolute -bottom-6 -left-3 w-40 rotate-[-5deg] bg-sticky p-3 text-[12px] leading-snug text-[#3b2f08] shadow-[0_10px_20px_rgba(0,0,0,0.45)] sm:-left-8"
         aria-hidden="true"
       >
         Password arsip: lihat catatan shift malam.

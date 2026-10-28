@@ -1,4 +1,16 @@
 import React from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faBatteryThreeQuarters,
+  faDatabase,
+  faDoorOpen,
+  faEnvelope,
+  faMagnifyingGlass,
+  faFileSignature,
+  faNoteSticky,
+  faWifi,
+  type IconDefinition,
+} from "@fortawesome/free-solid-svg-icons";
 
 export const DOCK_BASE = 50; // ukuran ikon dock (px) saat tidak dibesarkan
 export const DOCK_PEAK = 1.5; // skala ikon yang ditunjuk kursor
@@ -8,7 +20,9 @@ export const DOCK_CLEARANCE = 92; // ruang yang disisakan untuk jendela yang di-
 export interface DockApp {
   id: string;
   label: string;
-  icon: string;
+  icon: IconDefinition;
+  /** warna glyph di atas tile */
+  glyphColor: string;
   tile: string;
 }
 
@@ -16,24 +30,35 @@ export const DOCK_APPS: DockApp[] = [
   {
     id: "siquery",
     label: "DB Studio",
-    icon: "🗄️",
+    icon: faDatabase,
+    glyphColor: "#ffffff",
     tile: "linear-gradient(160deg,#47b995 0%,#1d5f4a 100%)",
   },
   {
     id: "unimail",
     label: "UniMail",
-    icon: "✉️",
+    icon: faEnvelope,
+    glyphColor: "#ffffff",
     tile: "linear-gradient(160deg,#6db3ff 0%,#2c63d6 100%)",
   },
   {
     id: "notepad",
     label: "Catatan",
-    icon: "📝",
+    icon: faNoteSticky,
+    glyphColor: "#5a3e00",
     tile: "linear-gradient(160deg,#f7dc7a 0%,#dfa629 100%)",
+  },
+  {
+    id: "report",
+    label: "Laporkan",
+    icon: faFileSignature,
+    glyphColor: "#ffffff",
+    tile: "linear-gradient(160deg,#e07a5f 0%,#9c3b24 100%)",
   },
 ];
 
 export const EXIT_INDEX = DOCK_APPS.length; // ikon "Meja" ada setelah pemisah
+export const EXIT_ICON: IconDefinition = faDoorOpen;
 
 export const dockScale = (index: number, hovered: number | null) => {
   if (hovered === null) return 1;
@@ -41,84 +66,61 @@ export const dockScale = (index: number, hovered: number | null) => {
 };
 
 /* ------------------------------------------------------------------ */
-/* Ikon kecil (SVG supaya tidak bergantung pada font emoji)             */
+/* Ikon dock                                                            */
 /* ------------------------------------------------------------------ */
 
-export const LogoIcon: React.FC = () => (
-  <svg
-    width="15"
-    height="15"
-    viewBox="0 0 20 20"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
+/** Glyph ikon dock. Ukurannya mengikuti font-size tombol induknya. */
+export const DockGlyph: React.FC<{ icon: IconDefinition; color?: string }> = ({
+  icon,
+  color,
+}) => (
+  <FontAwesomeIcon
+    icon={icon}
     aria-hidden="true"
-  >
-    <circle cx="8.5" cy="8.5" r="5.5" />
-    <path d="M12.8 12.8 17 17" />
-  </svg>
+    style={color ? { color } : undefined}
+  />
 );
 
+/* ------------------------------------------------------------------ */
+/* Ikon menubar                                                         */
+/* ------------------------------------------------------------------ */
+
+/** Ikon logo di menubar (setara menu apel). Ukuran dalam px. */
+export const LogoIcon: React.FC<{ size?: number }> = ({ size = 15 }) => (
+  <FontAwesomeIcon
+    icon={faMagnifyingGlass}
+    aria-hidden="true"
+    style={{ fontSize: size }}
+  />
+);
+
+/** Ikon "Kembali ke meja". Ukuran dalam px. */
 export const ExitIcon: React.FC<{ size?: number }> = ({ size = 15 }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 20 20"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
+  <FontAwesomeIcon
+    icon={EXIT_ICON}
     aria-hidden="true"
-  >
-    <path d="M8 3.5H4.5a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1H8" />
-    <path d="M12.5 6.5 16 10l-3.5 3.5M16 10H8" />
-  </svg>
+    style={{ fontSize: size }}
+  />
 );
 
-export const WifiIcon: React.FC = () => (
-  <svg
-    width="15"
-    height="15"
-    viewBox="0 0 20 20"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
+export const WifiIcon: React.FC<{ size?: number }> = ({ size = 15 }) => (
+  <FontAwesomeIcon
+    icon={faWifi}
     aria-hidden="true"
-  >
-    <path d="M2.5 7.5a10.5 10.5 0 0 1 15 0M5.2 10.6a6.6 6.6 0 0 1 9.6 0M7.9 13.6a2.8 2.8 0 0 1 4.2 0" />
-    <circle cx="10" cy="16.2" r="0.6" fill="currentColor" />
-  </svg>
+    style={{ fontSize: size }}
+  />
 );
 
-export const BatteryIcon: React.FC = () => (
-  <svg
-    width="20"
-    height="15"
-    viewBox="0 0 26 16"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.4"
+export const BatteryIcon: React.FC<{ size?: number }> = ({ size = 15 }) => (
+  <FontAwesomeIcon
+    icon={faBatteryThreeQuarters}
     aria-hidden="true"
-  >
-    <rect x="1" y="2.5" width="21" height="11" rx="3" opacity="0.7" />
-    <rect
-      x="3"
-      y="4.5"
-      width="15"
-      height="7"
-      rx="1.5"
-      fill="currentColor"
-      stroke="none"
-    />
-    <path d="M24 6v4" strokeLinecap="round" opacity="0.7" />
-  </svg>
+    style={{ fontSize: size }}
+  />
 );
 
 /* ------------------------------------------------------------------ */
-/* Ikon desktop (kanan atas, seperti ikon berkas di macOS)              */
+/* Kelas Tailwind bersama                                               */
 /* ------------------------------------------------------------------ */
 
 export const ICON_BUTTON =

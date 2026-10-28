@@ -1,17 +1,26 @@
-// src/case/01-missing-manuscript/story.ts
+// src/cases/06-missing-manuscript/story.ts
 import type { CaseData } from "../../types/case.types";
 
 export const missingManuscriptCase: CaseData = {
-  id: "01-missing-manuscript",
+  id: "06-missing-manuscript",
   title: "The Missing Manuscript",
   date: "25 Oktober 2026",
+  meta: {
+    number: "06",
+    location: "Perpustakaan Universitas",
+    level: 5,
+    levelLabel: "Sangat sulit",
+    summary:
+      "Manuskrip kuno 'Codex Nusantara' lenyap dari Ruang Koleksi Khusus. Telusuri semua jejak yang tersisa dan temukan pelakunya.",
+    skills: ["JOIN", "SUBQUERY", "GROUP BY"],
+  },
   briefing:
-    "Manuskrip kuno abad ke-15 'Codex Nusantara' lenyap tanpa jejak kerusakan fisik dari Ruang Koleksi Khusus Perpustakaan Universitas. Periksa barang bukti fisik dan telusuri database perpustakaan untuk mengungkap pelakunya.",
+    "Manuskrip kuno abad ke-15 'Codex Nusantara' lenyap tanpa jejak kerusakan fisik dari Ruang Koleksi Khusus Perpustakaan Universitas. Kartu akses Dr. Hendra dilaporkan hilang sehari sebelum kejadian. Telusuri database untuk mengetahui siapa yang memakai kartu itu, lalu isi formulir laporan.",
 
   // Petunjuk untuk pengusutan
   hints: [
-    "Bandingkan access_logs saat jam pencurian (20:00 - 21:00) dengan laporan kartu hilang di security_reports.",
-    "Periksa siapa anggota yang meminjam buku denah/sistem kunci dan katalog manuskrip.",
+    "Dr. Hendra melapor kartunya hilang tanggal 24 Oktober. Cari kartu itu di access_logs pada 25 Oktober malam.",
+    "Cari tahu siapa yang berada di ruang bimbingan saat kartu hilang, dan siapa yang masih meminjam buku sistem kunci atau katalog manuskrip.",
   ],
 
   // Barang bukti fisik / dokumen di TKP
@@ -36,7 +45,7 @@ export const missingManuscriptCase: CaseData = {
     },
   ],
 
-  // Kunci jawaban kasus
+  // Kunci jawaban kasus (dipakai untuk formulir laporan)
   solution: {
     culpritId: 103, // Bagas Pratama
     stolenCardId: "CRD-8801", // Kartu Dr. Hendra yang dicuri
@@ -112,13 +121,69 @@ export const missingManuscriptCase: CaseData = {
 
     INSERT INTO access_logs VALUES
     (5001, 'CRD-8804', 'Ruang Koleksi Khusus', '2026-10-25', '18:30:00', '19:00:00', 'GRANTED'),
-    (5002, 'CRD-8805', 'Ruang Baca Utama', '2026-10-25', '19:15:00', '21:30:00', 'GRANTED'),
+    (5002, 'CRD-8805', 'Ruang Baca Utama',     '2026-10-25', '19:15:00', '21:30:00', 'GRANTED'),
     (5003, 'CRD-8801', 'Ruang Koleksi Khusus', '2026-10-25', '20:42:00', '20:58:00', 'GRANTED'),
     (5004, 'CRD-8802', 'Ruang Koleksi Khusus', '2026-10-25', '21:10:00', '21:10:00', 'DENIED'),
-    (5005, 'CRD-8803', 'Ruang Baca Utama', '2026-10-25', '19:30:00', '21:05:00', 'GRANTED');
+    (5005, 'CRD-8803', 'Ruang Baca Utama',    '2026-10-25', '19:30:00', '20:30:00', 'GRANTED');
 
     INSERT INTO security_reports VALUES
     (901, 102, '2026-10-12', '10:00:00', 'Melaporkan kehilangan payung hitam di loker penitipan barang.'),
-    (902, 101, '2026-10-24', '14:30:00', 'Dr. Hendra melaporkan kartu aksesnya (CRD-8801) hilang terjatuh di ruang bimbingan skripsi Fakultas Sejarah setelah sesi konsultasi dengan mahasiswa.');
+    (902, 101, '2026-10-24', '14:30:00', 'Dr. Hendra melaporkan kartu aksesnya (CRD-8801) hilang terjatuh di ruang bimbingan skripsi Fakultas Sejarah setelah sesi konsultasi dengan mahasiswa.'),
+    (903, 103, '2026-10-24', '15:10:00', 'Petugas melihat Bagas Pratama menjadi mahasiswa terakhir yang keluar dari ruang bimbingan skripsi Dr. Hendra, beberapa menit setelah sesi konsultasi selesai.');
   `,
+
+  // Formulir laporan akhir (menggantikan answerSql)
+  report: {
+    fields: [
+      {
+        key: "pelaku",
+        label: "Siapa pelaku pencurian manuskrip?",
+        hint: "Pikirkan siapa yang berada dekat kartu saat hilang, lalu siapa yang masuk Ruang Koleksi malam itu.",
+        options: [
+          { value: "101", label: "Dr. Hendra Wijaya" },
+          { value: "102", label: "Siti Nabila" },
+          { value: "103", label: "Bagas Pratama" },
+          { value: "104", label: "Rina Kusuma" },
+          { value: "105", label: "Dimas Anggara" },
+          { value: "106", label: "Prof. Aris Munandar" },
+        ],
+      },
+      {
+        key: "kartu",
+        label: "Kartu siapa yang dicuri dan dipakai masuk Ruang Koleksi?",
+        options: [
+          { value: "CRD-8801", label: "CRD-8801 — Dr. Hendra Wijaya" },
+          { value: "CRD-8802", label: "CRD-8802 — Siti Nabila" },
+          { value: "CRD-8803", label: "CRD-8803 — Bagas Pratama" },
+          { value: "CRD-8804", label: "CRD-8804 — Rina Kusuma" },
+          { value: "CRD-8805", label: "CRD-8805 — Dimas Anggara" },
+          { value: "CRD-8806", label: "CRD-8806 — Prof. Aris Munandar" },
+        ],
+      },
+      {
+        key: "buku",
+        label: "Buku mana yang dipinjam pelaku untuk mempelajari sistem kunci?",
+        options: [
+          { value: "BK-001", label: "Pengantar Sejarah Asia Tenggara" },
+          { value: "BK-002", label: "Denah & Sistem Kunci Ruang Koleksi Kuno" },
+          {
+            value: "BK-003",
+            label: "Katalog Manuskrip Abad ke-15: Codex Nusantara",
+          },
+          { value: "BK-004", label: "Algoritma Kriptografi Modern" },
+          {
+            value: "BK-005",
+            label: "Panduan Konservasi Kertas Lontar dan Perkamen",
+          },
+        ],
+      },
+    ],
+    answer: {
+      pelaku: "103",
+      kartu: "CRD-8801",
+      buku: "BK-002",
+    },
+    successMessage:
+      "Bagas Pratama ditetapkan sebagai pelaku. Codex Nusantara akan segera dicari.",
+  },
 };

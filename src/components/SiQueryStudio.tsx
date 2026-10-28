@@ -1,47 +1,8 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import { parseSchema } from "../utils/parseSchema";
 import { useDb } from "../context/DatabaseContext";
+import { SqlEditor } from "./SqlEditor";
 import type { CaseData, QueryResult } from "../types/case.types";
-
-const TABLES_SCHEMA = [
-  {
-    name: "members",
-    cols: [
-      "member_id",
-      "full_name",
-      "role",
-      "department",
-      "card_id",
-      "physical_note",
-    ],
-  },
-  { name: "books", cols: ["book_id", "title", "category", "location"] },
-  {
-    name: "borrowing_records",
-    cols: ["record_id", "member_id", "book_id", "borrow_date", "return_date"],
-  },
-  {
-    name: "access_logs",
-    cols: [
-      "log_id",
-      "card_id",
-      "room_name",
-      "access_date",
-      "entry_time",
-      "exit_time",
-      "status",
-    ],
-  },
-  {
-    name: "security_reports",
-    cols: [
-      "report_id",
-      "member_id",
-      "report_date",
-      "report_time",
-      "description",
-    ],
-  },
-];
 
 const FOCUS =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lamp";
@@ -50,7 +11,13 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
   caseData,
 }) => {
   // Ambil state dan fungsi query langsung dari context sistem
-  const { isReady, isLoading, error: dbError, executeQuery } = useDb();
+  const { isReady, isLoading, error: dbError, submitQuery, solved } = useDb();
+
+  // Sidebar mengikuti skema chapter yang sedang dimainkan
+  const schema = useMemo(
+    () => parseSchema(caseData.schemaSql),
+    [caseData.schemaSql],
+  );
 
   const [query, setQuery] = useState(
     "SELECT * FROM access_logs WHERE status = 'GRANTED';",
@@ -61,7 +28,7 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
 
   const handleRunQuery = () => {
     setLocalError(null);
-    const res = executeQuery(query);
+    const res = submitQuery(query);
     if (res) {
       setResult(res);
     }
@@ -72,7 +39,7 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
     setQuery(defaultQuery);
     setActiveTable(tableName);
     setLocalError(null);
-    const res = executeQuery(defaultQuery);
+    const res = submitQuery(defaultQuery);
     if (res) {
       setResult(res);
     }
@@ -95,7 +62,7 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
           Skema database
         </h3>
 
-        {TABLES_SCHEMA.map((tb) => {
+        {schema.map((tb) => {
           const isActive = activeTable === tb.name;
           return (
             <div
@@ -152,14 +119,13 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
             </div>
           </div>
 
-          <textarea
+          <SqlEditor
             id="sql-input"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={setQuery}
             onKeyDown={handleKeyDown}
-            spellCheck={false}
+            schema={schema}
             placeholder="Ketik kueri SQL di sini..."
-            className="h-28 w-full resize-none rounded-lg border border-paper/12 bg-screen p-[10px_12px] font-mono text-[0.88rem] leading-relaxed text-phosphor caret-lamp shadow-[inset_0_0_30px_rgba(0,0,0,0.6)] placeholder:text-phosphor/35 focus:border-lamp focus:outline-none focus:ring-[3px] focus:ring-lamp/25"
           />
         </section>
 
@@ -170,6 +136,12 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
         )}
 
         <section className="os-result-section flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
+          {solved && (
+            <div className="rounded-lg border border-[#28c840]/50 bg-[#28c840]/12 p-[10px_12px] font-sans text-[0.8rem] text-phosphor">
+              <b>Tiket selesai.</b> Hasil kueri sesuai dengan target tugas.
+            </div>
+          )}
+
           {activeError && (
             <div className="os-error rounded-lg border border-mac-red/50 bg-mac-red/12 p-[10px_12px] font-sans text-[0.8rem] text-[#f0a08f]">
               <b>Kueri gagal.</b> {activeError}

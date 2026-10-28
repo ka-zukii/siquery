@@ -37,6 +37,7 @@ export const Desktop: React.FC<DesktopProps> = ({ caseData, onExit }) => {
       { id: "siquery", title: "SiQuery DB Studio" },
       { id: "unimail", title: "UniMail - Kotak Masuk" },
       { id: "notepad", title: "Catatan Investigasi" },
+      { id: "report", title: "Laporkan Kasus" },
     ]);
 
   // Jam di menubar berjalan
