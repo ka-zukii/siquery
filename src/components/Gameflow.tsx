@@ -2,11 +2,16 @@ import React, { useEffect, useState } from "react";
 import { MainMenu } from "./MainMenu";
 import { DeskScene } from "./Deskscene";
 import { Desktop } from "./Desktop";
+import { useBgm } from "../hooks/useBGM";
 import type { CaseData } from "../types/case.types";
 
 type Phase = "menu" | "desk" | "pc";
 
 const FADE_MS = 400;
+
+// File ada di public/audio/bgm/. BASE_URL menjaga path tetap benar
+// kalau game di-deploy di subfolder.
+const MENU_BGM = `${import.meta.env.BASE_URL}audio/bgm/After_Hours_in_the_Archive.mp3`;
 
 interface GameFlowProps {
   caseData: CaseData;
@@ -24,6 +29,9 @@ export const GameFlow: React.FC<GameFlowProps> = ({ caseData }) => {
   const [phase, setPhase] = useState<Phase>("menu");
   const [pcMounted, setPcMounted] = useState(false);
   const [pcVisible, setPcVisible] = useState(false);
+
+  // Musik menu: fade in di menu, fade out saat pemain masuk ke meja 3D
+  useBgm(MENU_BGM, phase === "menu");
 
   // Desktop memudar masuk saat kamera tiba di layar, dan memudar keluar saat kembali.
   useEffect(() => {

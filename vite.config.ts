@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     allowedHosts: [
-      "utopan-ip-182-9-2-55.tunnelmole.net",
+      "bsy0ti-ip-182-9-2-55.tunnelmole.net",
       "localhost",
       "127.0.0.1",
     ],
