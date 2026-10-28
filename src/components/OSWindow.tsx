@@ -5,6 +5,10 @@ interface OSWindowProps {
   windowState: WindowState;
   defaultPosition?: { x: number; y: number };
   defaultSize?: { width: string; height: string };
+  /** true bila ini jendela paling depan; jendela lain tampil redup seperti macOS */
+  isActive?: boolean;
+  /** ruang kosong di bawah saat jendela di-zoom (supaya tidak tertutup Dock) */
+  bottomInset?: number;
   onClose: () => void;
   onMinimize: () => void;
   onFocus: () => void;
@@ -19,6 +23,8 @@ export const OSWindow: React.FC<OSWindowProps> = ({
   windowState,
   defaultPosition = { x: 40, y: 40 },
   defaultSize = { width: "850px", height: "520px" },
+  isActive = true,
+  bottomInset = 0,
   onClose,
   onMinimize,
   onFocus,
@@ -26,6 +32,7 @@ export const OSWindow: React.FC<OSWindowProps> = ({
 }) => {
   const [position, setPosition] = useState(defaultPosition);
   const [isDragging, setIsDragging] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
 
   // State untuk menahan lifecycle komponen sampai animasi selesai
   const [shouldRender, setShouldRender] = useState(windowState.isOpen);
@@ -54,6 +61,7 @@ export const OSWindow: React.FC<OSWindowProps> = ({
       setAnimClass("animate-mac-close pointer-events-none");
       const timer = setTimeout(() => {
         setShouldRender(false);
+        setIsZoomed(false); // dibuka lagi nanti dalam ukuran normal
       }, 200); // sesuai durasi mac-close
       return () => clearTimeout(timer);
     }
@@ -79,6 +87,8 @@ export const OSWindow: React.FC<OSWindowProps> = ({
     };
   }, []);
 
+  const toggleZoom = () => setIsZoomed((z) => !z);
+
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
     if ((e.target as HTMLElement).closest(".win-controls")) return;
@@ -89,6 +99,9 @@ export const OSWindow: React.FC<OSWindowProps> = ({
     e.preventDefault();
     onFocus();
 
+    // Jendela yang sedang di-zoom tidak bisa digeser
+    if (isZoomed) return;
+
     dragRef.current = {
       startX: e.clientX,
       startY: e.clientY,
@@ -97,6 +110,11 @@ export const OSWindow: React.FC<OSWindowProps> = ({
     };
 
     setIsDragging(true);
+  };
+
+  const handleTitlebarDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest(".win-controls")) return;
+    toggleZoom();
   };
 
   useEffect(() => {
@@ -132,6 +150,7 @@ export const OSWindow: React.FC<OSWindowProps> = ({
     if (!element || !parent) return;
 
     const observer = new ResizeObserver(() => {
+      if (isZoomed) return;
       setPosition((current) => clampPosition(current.x, current.y));
     });
 
@@ -139,9 +158,34 @@ export const OSWindow: React.FC<OSWindowProps> = ({
     observer.observe(element);
 
     return () => observer.disconnect();
-  }, [clampPosition]);
+  }, [clampPosition, isZoomed]);
 
   if (!shouldRender) return null;
+
+  const geometry: React.CSSProperties = isZoomed
+    ? {
+        left: 0,
+        top: 0,
+        width: "100%",
+        height: `calc(100% - ${bottomInset}px)`,
+      }
+    : {
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+        width: defaultSize.width,
+        height: defaultSize.height,
+      };
+
+  // Lampu lalu lintas: berwarna saat jendela aktif atau saat kursor di atasnya.
+  // Nama kelas ditulis utuh (bukan disusun dari string) supaya terdeteksi Tailwind.
+  const RED = isActive ? "bg-mac-red" : "bg-paper/25 group-hover:bg-mac-red";
+  const YELLOW = isActive ? "bg-lamp" : "bg-paper/25 group-hover:bg-lamp";
+  const GREEN = isActive
+    ? "bg-[#28c840]"
+    : "bg-paper/25 group-hover:bg-[#28c840]";
+
+  const lightBase =
+    "win-btn flex h-3.25 w-3.25 cursor-pointer items-center justify-center rounded-full border border-black/30 text-[0px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lamp group-hover:after:font-extrabold group-hover:after:text-black/70";
 
   return (
     <div
@@ -150,29 +194,37 @@ export const OSWindow: React.FC<OSWindowProps> = ({
       style={{
         position: "absolute",
         zIndex: windowState.zIndex,
-        left: `${position.x}px`,
-        top: `${position.y}px`,
-        width: defaultSize.width,
-        height: defaultSize.height,
         maxWidth: "100%",
         maxHeight: "100%",
         boxSizing: "border-box",
+        ...geometry,
       }}
-      className={`os-window flex flex-col overflow-hidden rounded-xl border border-white/10 bg-[#18181b] text-[#f5f5f7] shadow-[0_20px_50px_rgba(0,0,0,0.7)] origin-bottom ${animClass}`}
+      className={`os-window flex flex-col overflow-hidden border border-paper/12 bg-panel font-sans text-paper origin-bottom ${
+        isZoomed ? "rounded-none" : "rounded-xl"
+      } ${
+        isActive
+          ? "shadow-[0_28px_70px_rgba(0,0,0,0.7),0_0_0_1px_rgba(0,0,0,0.45)]"
+          : "shadow-[0_12px_32px_rgba(0,0,0,0.45),0_0_0_1px_rgba(0,0,0,0.4)]"
+      } ${
+        isDragging
+          ? ""
+          : "transition-[left,top,width,height,box-shadow] duration-250 ease-out motion-reduce:transition-none"
+      } ${animClass}`}
     >
       {/* Titlebar */}
       <div
         onMouseDown={handleMouseDown}
+        onDoubleClick={handleTitlebarDoubleClick}
         style={{
           height: TITLEBAR_HEIGHT,
           minHeight: TITLEBAR_HEIGHT,
         }}
-        className={`win-titlebar flex shrink-0 select-none items-center border-b border-white/8 bg-[#27272a] px-3 ${
-          isDragging ? "cursor-grabbing" : "cursor-grab"
-        }`}
+        className={`win-titlebar flex shrink-0 select-none items-center border-b border-paper/10 px-3 transition-colors ${
+          isActive ? "bg-panel-hi" : "bg-panel"
+        } ${isZoomed ? "cursor-default" : isDragging ? "cursor-grabbing" : "cursor-grab"}`}
       >
-        {/* Window Controls (Merah Tutup di Kiri, Kuning Minimize di Kanan) */}
-        <div className="win-controls flex flex-row items-center gap-2 group">
+        {/* Lampu lalu lintas: tutup, minimalkan, zoom */}
+        <div className="win-controls group flex flex-row items-center gap-2">
           <button
             type="button"
             aria-label="Tutup jendela"
@@ -180,7 +232,7 @@ export const OSWindow: React.FC<OSWindowProps> = ({
               e.stopPropagation();
               onClose();
             }}
-            className="win-btn btn-close flex h-3.25 w-3.25 cursor-pointer items-center justify-center rounded-full border border-black/25 bg-[#ff5f57] text-[0px] group-hover:after:content-['✕'] group-hover:after:text-[8px] group-hover:after:font-extrabold group-hover:after:text-black/70"
+            className={`${lightBase} btn-close ${RED} group-hover:after:content-['✕'] group-hover:after:text-[8px]`}
           />
 
           <button
@@ -190,18 +242,34 @@ export const OSWindow: React.FC<OSWindowProps> = ({
               e.stopPropagation();
               onMinimize();
             }}
-            className="win-btn btn-min flex h-3.25 w-3.25 cursor-pointer items-center justify-center rounded-full border border-black/25 bg-[#febc2e] text-[0px] group-hover:after:content-['−'] group-hover:after:text-[11px] group-hover:after:font-extrabold group-hover:after:text-black/70"
+            className={`${lightBase} btn-min ${YELLOW} group-hover:after:content-['−'] group-hover:after:text-[11px]`}
+          />
+
+          <button
+            type="button"
+            aria-label={
+              isZoomed ? "Kembalikan ukuran jendela" : "Perbesar jendela"
+            }
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleZoom();
+            }}
+            className={`${lightBase} btn-zoom ${GREEN} group-hover:after:content-['+'] group-hover:after:text-[11px]`}
           />
         </div>
 
-        {/* Window Title */}
-        <div className="win-title flex flex-1 items-center justify-center gap-1.5 pr-13.5 text-center text-[0.8rem] font-semibold text-zinc-200">
+        {/* Judul jendela: di tengah, mengimbangi lebar tiga tombol di kiri */}
+        <div
+          className={`win-title flex flex-1 items-center justify-center gap-1.5 pr-14 text-center text-[0.8rem] font-semibold transition-colors ${
+            isActive ? "text-paper/85" : "text-paper/40"
+          }`}
+        >
           {windowState.title}
         </div>
       </div>
 
-      {/* Window Body (Hitam Matte) */}
-      <div className="win-body flex min-h-0 flex-1 flex-col overflow-hidden bg-[#121214] text-[#f5f5f7]">
+      {/* Isi jendela */}
+      <div className="win-body flex min-h-0 flex-1 flex-col overflow-hidden bg-mac-solid text-paper">
         {children}
       </div>
     </div>

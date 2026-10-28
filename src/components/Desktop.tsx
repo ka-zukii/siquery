@@ -1,23 +1,64 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useWindowManager } from "../hooks/useWindowManager";
 import { useSound } from "../hooks/useSound";
-import { OSWindow } from "./OSWindow";
-import { SiQueryStudio } from "./SiQueryStudio";
 import type { CaseData } from "../types/case.types";
+import {
+  LogoIcon,
+  ExitIcon,
+  WifiIcon,
+  BatteryIcon,
+  MENU_ITEM,
+} from "./desktop/constants/desktop.constants";
+import { DesktopIcons } from "./desktop/components/DesktopIcons";
+import { DesktopAppWindows } from "./desktop/components/DesktopAppWindows";
+import { DesktopDock } from "./desktop/components/DesktopDock";
 
 interface DesktopProps {
   caseData: CaseData;
+  /** Dipanggil saat pemain meninggalkan komputer dan kembali ke meja 3D */
+  onExit?: () => void;
 }
 
-export const Desktop: React.FC<DesktopProps> = ({ caseData }) => {
+/* ------------------------------------------------------------------ */
+/* Dock                                                                */
+/* ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------ */
+/* Komponen                                                             */
+/* ------------------------------------------------------------------ */
+
+export const Desktop: React.FC<DesktopProps> = ({ caseData, onExit }) => {
   const { playSound } = useSound();
+  const [now, setNow] = useState(() => new Date());
+  const [appleMenuOpen, setAppleMenuOpen] = useState(false);
 
   const { windows, openWindow, closeWindow, minimizeWindow, focusWindow } =
     useWindowManager([
       { id: "siquery", title: "SiQuery DB Studio" },
-      { id: "unimail", title: "UniMail - Inbox" },
-      { id: "notepad", title: "Detective Notes" },
+      { id: "unimail", title: "UniMail - Kotak Masuk" },
+      { id: "notepad", title: "Catatan Investigasi" },
     ]);
+
+  // Jam di menubar berjalan
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 15_000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Esc: tutup menu apel dulu; kalau tidak ada menu terbuka, berdiri dari
+  // komputer dan kembali ke meja 3D.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (appleMenuOpen) {
+        setAppleMenuOpen(false);
+        return;
+      }
+      onExit?.();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onExit, appleMenuOpen]);
 
   const handleAppOpen = (id: string) => {
     playSound("open");
@@ -29,148 +70,151 @@ export const Desktop: React.FC<DesktopProps> = ({ caseData }) => {
     closeWindow(id);
   };
 
+  // Jendela paling depan = aplikasi aktif (namanya tampil tebal di menubar)
+  const visible = Object.entries(windows)
+    .filter(([, w]) => w.isOpen && !w.isMinimized)
+    .sort((a, b) => b[1].zIndex - a[1].zIndex);
+  const activeId = visible[0]?.[0] ?? null;
+  const activeTitle = activeId ? windows[activeId].title : "Meja Kerja";
+
+  const dateLabel = now.toLocaleDateString("id-ID", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+  const timeLabel = now.toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
   return (
-    <div className="absolute inset-0 select-none overflow-hidden bg-[#1b1464]">
-      {/* Background */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_15%_10%,#ff6ec4_0%,transparent_45%),radial-gradient(ellipse_at_85%_20%,#7873f5_0%,transparent_50%),radial-gradient(ellipse_at_50%_100%,#0a84ff_0%,transparent_55%)]" />
+    <div className="absolute inset-0 select-none overflow-hidden bg-desk font-sans">
+      {/* Wallpaper: cahaya lampu meja dan bayangan tepi meja */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60rem_40rem_at_12%_-8%,rgba(240,184,75,0.2),transparent_62%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.55),transparent_40%)]" />
 
-      {/* Header */}
-      <header className="absolute left-0 right-0 top-0 z-100 flex h-7 items-center justify-between border-b border-white/5 bg-[#141418]/55 px-3 text-xs font-medium text-mac-text backdrop-blur-[30px]">
-        <div className="flex items-center gap-3">
-          <span className="font-bold"> SiQuery OS</span>
-
-          <span className="cursor-pointer rounded px-2 py-0.5 hover:bg-white/15">
-            File
-          </span>
-
-          <span className="cursor-pointer rounded px-2 py-0.5 hover:bg-white/15">
-            Edit
-          </span>
-
-          <span className="cursor-pointer rounded px-2 py-0.5 hover:bg-white/15">
-            View
-          </span>
-        </div>
-
-        <span>
-          {new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
+      {/* Watermark wallpaper */}
+      <div
+        className="pointer-events-none absolute bottom-6 left-8 font-display text-5xl font-extrabold leading-none tracking-tight text-paper/[0.07]"
+        aria-hidden="true"
+      >
+        SiQuery
+        <span className="mt-1 block text-xl font-medium">
+          Perpustakaan Kampus
         </span>
-      </header>
-
-      {/* Desktop icons */}
-      <div className="desktop-icons absolute right-4 top-11 z-10 flex flex-col gap-3.5">
-        <button
-          type="button"
-          onClick={() => handleAppOpen("siquery")}
-          className="desktop-icon group flex w-22.5 cursor-pointer flex-col items-center rounded-lg p-2 text-center transition-all hover:bg-white/12"
-        >
-          <div className="icon-img mb-1 text-4xl drop-shadow-[0_3px_5px_rgba(0,0,0,0.4)] transition-transform group-hover:scale-105">
-            💾
-          </div>
-          <span className="text-[0.74rem] text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
-            DB Studio
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleAppOpen("unimail")}
-          className="desktop-icon group relative flex w-22.5 cursor-pointer flex-col items-center rounded-lg p-2 text-center transition-all hover:bg-white/12"
-        >
-          <div className="icon-img mb-1 text-4xl drop-shadow-[0_3px_5px_rgba(0,0,0,0.4)] transition-transform group-hover:scale-105">
-            ✉️
-          </div>
-
-          <span className="absolute -right-1 -top-0.5 rounded-full bg-mac-red px-1.5 py-0.5 text-[0.65rem] font-bold text-white shadow-[0_0_0_2px_rgba(0,0,0,0.2)]">
-            2
-          </span>
-
-          <span className="text-[0.74rem] text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
-            UniMail
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleAppOpen("notepad")}
-          className="desktop-icon group flex w-22.5 cursor-pointer flex-col items-center rounded-lg p-2 text-center transition-all hover:bg-white/12"
-        >
-          <div className="icon-img mb-1 text-4xl drop-shadow-[0_3px_5px_rgba(0,0,0,0.4)] transition-transform group-hover:scale-105">
-            📝
-          </div>
-
-          <span className="text-[0.74rem] text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
-            Notepad
-          </span>
-        </button>
       </div>
 
-      {/* Window container: dimulai tepat di bawah header */}
-      <main className="absolute inset-x-0 bottom-0 top-7 overflow-hidden">
-        {/* SiQuery */}
-        <OSWindow
-          windowState={windows["siquery"]}
-          onClose={() => handleAppClose("siquery")}
-          onMinimize={() => minimizeWindow("siquery")}
-          onFocus={() => focusWindow("siquery")}
-        >
-          <SiQueryStudio caseData={caseData} />
-        </OSWindow>
+      {/* Menubar */}
+      <header className="absolute left-0 right-0 top-0 z-100 flex h-7 items-center justify-between border-b border-paper/8 bg-desk/60 px-2 text-xs font-medium text-mac-text backdrop-blur-[30px]">
+        <div className="flex items-center gap-1">
+          {/* Menu logo (setara menu apel) */}
+          <div className="relative">
+            <button
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={appleMenuOpen}
+              aria-label="Menu SiQuery OS"
+              onClick={() => setAppleMenuOpen((o) => !o)}
+              className={`flex cursor-pointer items-center rounded px-2.5 py-1 text-lamp transition-colors hover:bg-paper/12 focus-visible:outline-2 focus-visible:outline-lamp ${
+                appleMenuOpen ? "bg-paper/15" : ""
+              }`}
+            >
+              <LogoIcon />
+            </button>
 
-        {/* UniMail */}
-        <OSWindow
-          windowState={windows["unimail"]}
-          onClose={() => handleAppClose("unimail")}
-          onMinimize={() => minimizeWindow("unimail")}
-          onFocus={() => focusWindow("unimail")}
-        >
-          <div className="grid h-full grid-cols-[250px_1fr] overflow-hidden bg-mac-solid">
-            <div className="space-y-1 overflow-y-auto border-r border-mac-sep bg-mac-sidebar p-1.5">
-              <div className="cursor-pointer rounded-lg bg-mac-accent p-2.5 text-white">
-                <div className="text-xs font-semibold">Kepala Perpustakaan</div>
+            {appleMenuOpen && (
+              <>
+                {/* Klik di luar menu menutupnya */}
+                <button
+                  type="button"
+                  aria-label="Tutup menu"
+                  tabIndex={-1}
+                  onClick={() => setAppleMenuOpen(false)}
+                  className="fixed inset-0 z-99 cursor-default"
+                />
+                <div
+                  role="menu"
+                  className="absolute left-0 top-7.5 z-100 min-w-60 rounded-lg border border-paper/15 bg-desk/80 p-1.5 text-[0.8rem] shadow-[0_18px_44px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => setAppleMenuOpen(false)}
+                    className="flex w-full cursor-pointer items-center rounded-md px-2.5 py-1.5 text-left text-paper hover:bg-lamp hover:text-[#1d1608]"
+                  >
+                    Tentang SiQuery OS
+                  </button>
 
-                <div className="truncate text-[0.76rem]">
-                  Laporan Kehilangan Codex
+                  {onExit && (
+                    <>
+                      <div className="my-1.5 border-t border-paper/12" />
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setAppleMenuOpen(false);
+                          onExit();
+                        }}
+                        className="group flex w-full cursor-pointer items-center justify-between gap-6 rounded-md px-2.5 py-1.5 text-left text-paper hover:bg-lamp hover:text-[#1d1608]"
+                      >
+                        <span>Kembali ke meja</span>
+                        <kbd className="font-sans text-[0.7rem] text-paper/50 group-hover:text-[#1d1608]/70">
+                          Esc
+                        </kbd>
+                      </button>
+                    </>
+                  )}
                 </div>
-
-                <div className="mt-0.5 text-[0.68rem] text-white/80">
-                  25 Okt 2026
-                </div>
-              </div>
-            </div>
-
-            <div className="overflow-y-auto p-6 text-mac-text">
-              <h3 className="mb-1 text-lg font-semibold">
-                Penting: Penyelidikan Kasus {caseData.title}
-              </h3>
-
-              <div className="mb-4 border-b border-mac-sep pb-3 text-xs text-mac-muted">
-                Dari: head@library.univ.ac.id • Untuk: detective@siquery.os
-              </div>
-
-              <p className="text-sm leading-relaxed text-[#e5e5ea]">
-                {caseData.briefing}
-              </p>
-            </div>
+              </>
+            )}
           </div>
-        </OSWindow>
 
-        {/* Notepad */}
-        <OSWindow
-          windowState={windows["notepad"]}
-          onClose={() => handleAppClose("notepad")}
-          onMinimize={() => minimizeWindow("notepad")}
-          onFocus={() => focusWindow("notepad")}
-        >
-          <textarea
-            className="h-full w-full resize-none bg-[#fff8d6] p-5 font-['Marker_Felt','Noteworthy',sans-serif] text-base leading-relaxed text-[#3a3a3c] focus:outline-none"
-            placeholder="Tulis catatan petunjuk investigasi di sini..."
-          />
-        </OSWindow>
-      </main>
+          <span className="px-2 py-0.5 font-bold text-paper">
+            {activeTitle}
+          </span>
+          <span className={MENU_ITEM}>Berkas</span>
+          <span className={MENU_ITEM}>Ubah</span>
+          <span className={MENU_ITEM}>Tampilan</span>
+          <span className={MENU_ITEM}>Jendela</span>
+          <span className={MENU_ITEM}>Bantuan</span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {onExit && (
+            <button
+              type="button"
+              onClick={onExit}
+              className="flex cursor-pointer items-center gap-1.5 rounded px-2 py-0.5 text-lamp transition-colors hover:bg-lamp/15 focus-visible:outline-2 focus-visible:outline-lamp"
+            >
+              <ExitIcon />
+              Kembali ke meja
+            </button>
+          )}
+          <span className="text-mac-muted" aria-hidden="true">
+            <WifiIcon />
+          </span>
+          <span className="text-mac-muted" aria-hidden="true">
+            <BatteryIcon />
+          </span>
+          <span className="text-mac-text">
+            {dateLabel}
+            <span className="ml-2 font-mono text-[0.72rem]">{timeLabel}</span>
+          </span>
+        </div>
+      </header>
+
+      <DesktopIcons onOpen={handleAppOpen} />
+
+      <DesktopAppWindows
+        caseData={caseData}
+        windows={windows}
+        activeId={activeId}
+        onClose={handleAppClose}
+        minimizeWindow={minimizeWindow}
+        focusWindow={focusWindow}
+      />
+
+      <DesktopDock windows={windows} onExit={onExit} onOpen={handleAppOpen} />
     </div>
   );
 };

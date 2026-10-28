@@ -1,16 +1,13 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import type { CaseData } from "../types/case.types";
+import type { Chapter } from "./main-menu/types";
+import { TerminalPreview } from "./main-menu/components/TerminalPreview";
+import { CatalogCard } from "./main-menu/components/CatalogCard";
+import { FONT_IMPORT, LOCAL_CSS, FOCUS } from "./main-menu/constants/styles";
 
-interface Chapter {
-  id: string;
-  title: string;
-  subtitle: string;
-  date: string;
-  location: string;
-  difficulty: string;
-  description: string;
-  isAvailable: boolean;
-}
+/* ------------------------------------------------------------------ */
+/* Tipe & data                                                         */
+/* ------------------------------------------------------------------ */
 
 interface MainMenuProps {
   caseData: CaseData;
@@ -18,6 +15,32 @@ interface MainMenuProps {
 }
 
 type ViewState = "main" | "chapters" | "howto" | "credits";
+
+/* ------------------------------------------------------------------ */
+/* CSS lokal: font, kursor, dan penghormatan terhadap reduced motion    */
+/* ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------ */
+/* Token warna (satu tempat supaya gampang diubah)                      */
+/* ------------------------------------------------------------------ */
+// meja   #0e1714  hijau tua gelap, warna meja kerja malam hari
+// panel  #15231e  bingkai monitor & panel
+// lampu  #f0b84b  cahaya lampu meja (aksen utama)
+// kertas #efe6d0  kartu katalog / formulir
+// tinta  #1d2420  teks di atas kertas
+// fosfor #9be8c9  teks layar terminal
+
+/* ------------------------------------------------------------------ */
+/* Terminal demo yang mengetik sendiri                                  */
+/* ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------ */
+/* Kartu katalog untuk slider chapter                                   */
+/* ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------ */
+/* Komponen utama                                                       */
+/* ------------------------------------------------------------------ */
 
 export const MainMenu: React.FC<MainMenuProps> = ({
   caseData,
@@ -29,264 +52,325 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   const chapters: Chapter[] = [
     {
       id: "01-missing-manuscript",
+      number: "01",
       title: caseData.title,
       subtitle: "Chapter 01: The Missing Manuscript",
       date: caseData.date,
       location: "Perpustakaan Universitas",
-      difficulty: "⭐⭐☆ (Dasar - Menengah)",
+      level: 2,
+      levelLabel: "Dasar sampai menengah",
       description:
-        "Manuskrip kuno abad ke-15 'Codex Nusantara' lenyap tanpa jejak kerusakan fisik dari Ruang Koleksi Khusus. Periksa barang bukti fisik dan telusuri database perpustakaan untuk mengungkap pelakunya.",
+        "Manuskrip kuno abad ke-15 'Codex Nusantara' lenyap tanpa jejak kerusakan fisik dari Ruang Koleksi Khusus. Periksa berkas di meja dan telusuri database perpustakaan untuk menemukan pelakunya.",
+      skills: ["SELECT", "WHERE", "JOIN"],
       isAvailable: true,
     },
     {
       id: "02-server-sabotage",
+      number: "02",
       title: "SiQuery: Server Room Sabotage",
-      subtitle: "Chapter 02: Coming Soon",
-      date: "Segera Hadir",
+      subtitle: "Chapter 02: Server Room Sabotage",
+      date: "Segera hadir",
       location: "Pusat Data Universitas",
-      difficulty: "⭐⭐⭐☆ (Menengah)",
+      level: 3,
+      levelLabel: "Menengah",
       description:
-        "Sistem penilaian akademik universitas lumpuh total akibat serangan siber pada tengah malam. Siapa orang dalam yang membocorkan kredensial server?",
+        "Sistem penilaian akademik lumpuh akibat serangan siber tengah malam. Cari tahu orang dalam yang membocorkan kredensial server.",
+      skills: ["GROUP BY", "HAVING", "SUBQUERY"],
       isAvailable: false,
     },
   ];
 
+  const total = chapters.length;
   const currentChapter = chapters[currentChapterIndex];
 
-  const handlePrevChapter = () => {
-    setCurrentChapterIndex(
-      (prev) => (prev - 1 + chapters.length) % chapters.length,
-    );
-  };
-
-  const handleNextChapter = () => {
-    setCurrentChapterIndex((prev) => (prev + 1) % chapters.length);
-  };
+  const goPrev = () => setCurrentChapterIndex((i) => (i - 1 + total) % total);
+  const goNext = () => setCurrentChapterIndex((i) => (i + 1) % total);
 
   const handlePlaySelected = () => {
-    if (currentChapter.isAvailable) {
-      onStartCase();
-    } else {
-      alert("Chapter ini masih dalam tahap pengembangan (Coming Soon)!");
-    }
+    if (currentChapter.isAvailable) onStartCase();
   };
 
+  // Navigasi keyboard
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && currentView !== "main") {
+        setCurrentView("main");
+        return;
+      }
+      if (currentView !== "chapters") return;
+      if (e.key === "ArrowLeft") goPrev();
+      if (e.key === "ArrowRight") goNext();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentView, total]);
+
+  const primaryBtn = `sq-sans inline-flex items-center justify-center rounded-xl bg-[#f0b84b] px-6 py-3.5 text-[15px] font-semibold text-[#1d1608] shadow-[0_10px_30px_rgba(240,184,75,0.25)] transition hover:bg-[#f6c765] active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none disabled:hover:bg-[#f0b84b] ${FOCUS}`;
+  const ghostBtn = `sq-sans inline-flex items-center justify-center rounded-xl border border-[#efe6d0]/25 px-5 py-3.5 text-[15px] font-medium text-[#efe6d0] transition hover:border-[#efe6d0]/55 hover:bg-[#efe6d0]/5 ${FOCUS}`;
+
+  const Wordmark = (
+    <button
+      onClick={() => setCurrentView("main")}
+      className={`sq-display text-left text-2xl font-extrabold tracking-tight text-paper ${FOCUS} rounded`}
+      aria-label="Kembali ke menu utama"
+    >
+      SiQuery
+      <span className="sq-sans ml-2 text-sm font-medium text-lamp">
+        Campus Librarian
+      </span>
+    </button>
+  );
+
   return (
-    <div className="relative w-screen h-screen bg-[#020617] flex flex-col justify-between items-center p-10 overflow-hidden font-sans">
-      {/* Background VFX */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(79,70,229,0.25)_0%,transparent_70%)] pointer-events-none" />
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-size-[100%_4px] pointer-events-none z-10" />
+    <div className="sq-sans relative min-h-screen w-full overflow-x-hidden bg-desk text-paper">
+      <style>{FONT_IMPORT}</style>
+      <style>{LOCAL_CSS}</style>
 
-      {/* Main Container */}
-      <div className="relative z-20 w-full max-w-212.5 flex flex-col items-center gap-8 my-auto">
-        {/* Hero Header */}
-        <div className="text-center">
-          <span className="inline-block bg-[#6366f1]/15 text-[#818cf8] border border-[#6366f1]/35 px-3.5 py-1 rounded-full text-xs font-bold tracking-[2px]">
-            DATABASE DETECTIVE SERIES
-          </span>
-          <h1 className="text-6xl font-black text-white my-2.5 tracking-tighter drop-shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
-            SI<span className="text-[#0a84ff]">QUERY</span>
-          </h1>
-          <p className="text-[#94a3b8] text-base tracking-[3px] uppercase">
-            The Art of SQL Investigation
-          </p>
-        </div>
+      {/* Cahaya lampu meja & bayangan tepi meja */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(60rem_40rem_at_12%_-8%,rgba(240,184,75,0.2),transparent_62%)]"
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.55),transparent_35%)]"
+        aria-hidden="true"
+      />
 
-        {/* VIEW 1: MAIN BUTTONS */}
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-8 sm:px-10">
+        {/* ================= MAIN ================= */}
         {currentView === "main" && (
-          <div className="w-full flex justify-center transition-all duration-300">
-            <div className="flex flex-col gap-3.5 w-full max-w-95">
-              <button
-                onClick={() => setCurrentView("chapters")}
-                className="bg-linear-to-br from-[#0a84ff] to-[#0062d2] text-white border-none p-4 rounded-xl text-base font-bold tracking-wider cursor-pointer shadow-[0_10px_25px_rgba(10,132,255,0.35)] hover:-translate-y-1 hover:brightness-110 transition-all duration-200"
+          <main className="my-auto grid items-center gap-14 py-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-16">
+            <section className="sq-rise">
+              <h1 className="sq-display text-[4.25rem] font-extrabold leading-[0.95] tracking-tight text-paper sm:text-[5.5rem]">
+                SiQuery
+              </h1>
+              <p className="sq-display mt-2 text-2xl font-medium text-lamp sm:text-3xl">
+                Campus Librarian
+              </p>
+              <p className="mt-6 max-w-[34ch] text-[17px] leading-relaxed text-paper/80">
+                Fokus ke layar. Periksa berkas di meja. Ketik kueri SQL untuk
+                menyelesaikan tugas pustakawan.
+              </p>
+
+              <nav
+                className="mt-9 flex max-w-sm flex-col gap-3"
+                aria-label="Menu utama"
               >
-                ▶ PLAY GAME
-              </button>
-              <button
-                onClick={() => setCurrentView("howto")}
-                className="bg-white/10 hover:bg-white/15 text-[#f8fafc] border border-white/15 hover:border-white/30 p-3.5 rounded-xl text-sm font-semibold tracking-wide cursor-pointer backdrop-blur-md hover:-translate-y-0.5 transition-all duration-200"
-              >
-                HOW TO PLAY
-              </button>
-              <button
-                onClick={() => setCurrentView("credits")}
-                className="bg-white/10 hover:bg-white/15 text-[#f8fafc] border border-white/15 hover:border-white/30 p-3.5 rounded-xl text-sm font-semibold tracking-wide cursor-pointer backdrop-blur-md hover:-translate-y-0.5 transition-all duration-200"
-              >
-                CREDITS
-              </button>
-            </div>
-          </div>
+                <button
+                  onClick={() => setCurrentView("chapters")}
+                  className={`${primaryBtn} justify-between text-left gap-2`}
+                >
+                  <span>Mulai shift</span>
+                  <span className="text-[13px] font-medium opacity-70">
+                    Pilih kasus
+                  </span>
+                </button>
+                <button
+                  onClick={() => setCurrentView("howto")}
+                  className={`${ghostBtn} justify-between text-left gap-2`}
+                >
+                  <span>Cara bermain</span>
+                  <span className="text-[13px] opacity-60">4 langkah</span>
+                </button>
+                <button
+                  onClick={() => setCurrentView("credits")}
+                  className={`${ghostBtn} justify-between text-left gap-2`}
+                >
+                  <span>Kredit</span>
+                  <span className="text-[13px] opacity-60">Tim pembuat</span>
+                </button>
+              </nav>
+            </section>
+
+            <section
+              className="sq-rise pb-8 lg:pl-4"
+              style={{ animationDelay: "120ms" }}
+            >
+              <TerminalPreview />
+            </section>
+          </main>
         )}
 
-        {/* VIEW 2: CHAPTER SLIDER */}
+        {/* ================= PILIH KASUS ================= */}
         {currentView === "chapters" && (
-          <div className="w-full flex flex-col items-center transition-all duration-300">
-            <div className="relative flex items-center gap-5 w-full max-w-180">
-              <button
-                onClick={handlePrevChapter}
-                className="bg-white/10 hover:bg-[#0a84ff] border border-white/15 hover:border-[#0a84ff] text-white w-11.25 h-11.25 rounded-full text-lg cursor-pointer flex justify-center items-center transition-all duration-200 shrink-0 hover:scale-110"
-              >
-                ❮
-              </button>
+          <main className="my-auto flex flex-col gap-8 py-8">
+            <header>{Wordmark}</header>
 
-              <div className="flex-1 bg-[#0f172a]/75 border border-white/12 backdrop-blur-[30px] rounded-[18px] p-7 shadow-[0_20px_50px_rgba(0,0,0,0.6)] animate-mac-open">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs font-bold text-[#818cf8] tracking-wider uppercase">
-                    {currentChapter.subtitle}
-                  </span>
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                      currentChapter.isAvailable
-                        ? "bg-[#30d158]/20 text-[#30d158]"
-                        : "bg-white/10 text-[#94a3b8]"
-                    }`}
-                  >
-                    {currentChapter.isAvailable ? "TERSEDIA" : "SEGERA HADIR"}
-                  </span>
-                </div>
-
-                <h2 className="text-2xl font-extrabold text-white mb-2">
-                  {currentChapter.title}
+            <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+              <div className="sq-rise">
+                <h2 className="sq-display text-4xl font-bold leading-tight text-paper">
+                  Pilih kasus dari laci katalog
                 </h2>
-
-                <div className="text-xs text-[#94a3b8] mb-3.5">
-                  <span>📅 {currentChapter.date}</span> •{" "}
-                  <span>📍 {currentChapter.location}</span> •{" "}
-                  <span>⭐ {currentChapter.difficulty}</span>
-                </div>
-
-                <p className="text-sm text-[#cbd5e1] leading-relaxed mb-6">
-                  {currentChapter.description}
+                <p className="mt-4 max-w-[38ch] text-[16px] leading-relaxed text-paper/75">
+                  Setiap kartu adalah satu tumpukan tiket tugas. Geser dengan
+                  tombol panah atau tombol kiri dan kanan di keyboard.
                 </p>
 
-                <div className="flex gap-3">
+                <div className="mt-8 flex items-center gap-3">
+                  <button
+                    onClick={goPrev}
+                    aria-label="Kasus sebelumnya"
+                    className={`flex h-11 w-11 items-center justify-center rounded-full border border-paper/25 text-lg transition hover:border-lamp hover:text-lamp ${FOCUS}`}
+                  >
+                    ‹
+                  </button>
+                  <div
+                    className="flex items-center gap-1.5"
+                    role="tablist"
+                    aria-label="Daftar kasus"
+                  >
+                    {chapters.map((c, idx) => (
+                      <button
+                        key={c.id}
+                        role="tab"
+                        aria-selected={idx === currentChapterIndex}
+                        aria-label={`Kasus ${c.number}`}
+                        onClick={() => setCurrentChapterIndex(idx)}
+                        className={`sq-mono h-9 min-w-9 rounded-md px-2.5 text-[13px] transition ${FOCUS} ${
+                          idx === currentChapterIndex
+                            ? "bg-paper font-medium text-ink"
+                            : "border border-paper/25 text-paper/70 hover:border-paper/60"
+                        }`}
+                      >
+                        {c.number}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={goNext}
+                    aria-label="Kasus berikutnya"
+                    className={`flex h-11 w-11 items-center justify-center rounded-full border border-paper/25 text-lg transition hover:border-lamp hover:text-lamp ${FOCUS}`}
+                  >
+                    ›
+                  </button>
+                </div>
+
+                <div className="mt-8 flex max-w-sm gap-3">
                   <button
                     onClick={() => setCurrentView("main")}
-                    className="flex-1 bg-white/10 hover:bg-white/15 text-white border border-white/15 p-3.5 rounded-xl text-sm font-semibold transition-all"
+                    className={`${ghostBtn} flex-1`}
                   >
-                    ⬅ Kembali
+                    Kembali
                   </button>
                   <button
                     onClick={handlePlaySelected}
                     disabled={!currentChapter.isAvailable}
-                    className={`flex-2 bg-linear-to-br from-[#0a84ff] to-[#0062d2] text-white border-none p-3.5 rounded-xl text-sm font-bold tracking-wider cursor-pointer shadow-lg hover:brightness-110 transition-all ${
-                      !currentChapter.isAvailable
-                        ? "opacity-50 cursor-not-allowed"
-                        : ""
-                    }`}
+                    className={`${primaryBtn} flex-[1.6]`}
                   >
-                    MULAI INVESTIGASI
+                    {currentChapter.isAvailable
+                      ? "Mulai investigasi"
+                      : "Segera hadir"}
                   </button>
                 </div>
               </div>
 
-              <button
-                onClick={handleNextChapter}
-                className="bg-white/10 hover:bg-[#0a84ff] border border-white/15 hover:border-[#0a84ff] text-white w-11.25 h-11.25 rounded-full text-lg cursor-pointer flex justify-center items-center transition-all duration-200 shrink-0 hover:scale-110"
+              {/* Tumpukan kartu katalog */}
+              <div
+                className="relative mx-auto h-116 w-full max-w-136 pb-8 pr-10 sm:h-108"
+                aria-live="polite"
               >
-                ❯
+                <div className="relative h-full w-full">
+                  {chapters.map((c, idx) => (
+                    <CatalogCard
+                      key={c.id}
+                      chapter={c}
+                      offset={(idx - currentChapterIndex + total) % total}
+                      onFocusCard={() => setCurrentChapterIndex(idx)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </main>
+        )}
+
+        {/* ================= CARA BERMAIN ================= */}
+        {currentView === "howto" && (
+          <main className="my-auto flex flex-col gap-8 py-8">
+            <header>{Wordmark}</header>
+            <div className="sq-rise rounded-[10px] bg-paper p-6 text-ink shadow-[0_24px_50px_rgba(0,0,0,0.5)] sm:p-9">
+              <h2 className="sq-display text-3xl font-bold">
+                Satu tiket, empat langkah
+              </h2>
+              <ol className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                  {
+                    t: "Terima tugas",
+                    d: "Buka tumpukan formulir di meja atau baca email masuk di layar komputer.",
+                  },
+                  {
+                    t: "Periksa berkas",
+                    d: "Klik KTM, struk, atau catatan tempel untuk menemukan petunjuk dan nilai yang dicari.",
+                  },
+                  {
+                    t: "Tulis kueri",
+                    d: "Beralih ke monitor lalu ketik SELECT, INSERT, UPDATE, atau JOIN di terminal.",
+                  },
+                  {
+                    t: "Validasi hasil",
+                    d: "Jika data yang kembali cocok dengan target tugas, tiket ditutup dan hari berlanjut.",
+                  },
+                ].map((s, i) => (
+                  <li
+                    key={s.t}
+                    className="rounded-lg border border-dashed border-ink/35 p-4"
+                  >
+                    <span className="sq-mono text-[12px] text-ink/55">
+                      Langkah {i + 1}
+                    </span>
+                    <h3 className="sq-display mt-1 text-lg font-bold">{s.t}</h3>
+                    <p className="mt-2 text-[14px] leading-relaxed text-ink/80">
+                      {s.d}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+              <button
+                onClick={() => setCurrentView("main")}
+                className={`mt-8 rounded-xl bg-ink px-6 py-3 text-[15px] font-semibold text-paper transition hover:bg-[#2b352f] ${FOCUS}`}
+              >
+                Kembali ke menu
               </button>
             </div>
-
-            {/* Slider Dots */}
-            <div className="flex justify-center gap-2 mt-7.5">
-              {chapters.map((_, idx) => (
-                <span
-                  key={idx}
-                  onClick={() => setCurrentChapterIndex(idx)}
-                  className={`h-2 rounded-full cursor-pointer transition-all duration-200 ${
-                    idx === currentChapterIndex
-                      ? "w-6 bg-[#0a84ff]"
-                      : "w-2 bg-white/20 hover:bg-white/40"
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
+          </main>
         )}
 
-        {/* VIEW 3: HOW TO PLAY */}
-        {currentView === "howto" && (
-          <div className="w-full max-w-170 bg-[#0f172a]/80 border border-white/12 backdrop-blur-[30px] rounded-[18px] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.6)] animate-mac-open">
-            <h2 className="text-2xl font-bold text-white mb-5 text-center">
-              📘 Panduan Investigasi
-            </h2>
-            <div className="grid grid-cols-3 gap-3.5 mb-6">
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
-                <div className="text-3xl mb-2">🔍</div>
-                <h3 className="text-sm font-bold text-white mb-1.5">
-                  1. Olah TKP Fisik
-                </h3>
-                <p className="text-xs text-[#94a3b8] leading-normal">
-                  Klik barang bukti dan berkas di meja kerja untuk mencatat
-                  petunjuk penting.
-                </p>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
-                <div className="text-3xl mb-2">🖥️</div>
-                <h3 className="text-sm font-bold text-white mb-1.5">
-                  2. Akses Terminal SQL
-                </h3>
-                <p className="text-xs text-[#94a3b8] leading-normal">
-                  Nyalakan PC, buka SiQuery DB Studio & UniMail untuk
-                  menganalisis data tabel.
-                </p>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
-                <div className="text-3xl mb-2">⚖️</div>
-                <h3 className="text-sm font-bold text-white mb-1.5">
-                  3. Eksekusi Tuduhan
-                </h3>
-                <p className="text-xs text-[#94a3b8] leading-normal">
-                  Kumpulkan ID pelaku, kartu akses, dan buku kunci untuk
-                  menuntaskan kasus.
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => setCurrentView("main")}
-              className="w-full bg-white/10 hover:bg-white/15 text-[#f8fafc] border border-white/15 p-3.5 rounded-xl text-sm font-semibold transition-all"
-            >
-              ⬅ Kembali
-            </button>
-          </div>
-        )}
-
-        {/* VIEW 4: CREDITS */}
+        {/* ================= KREDIT ================= */}
         {currentView === "credits" && (
-          <div className="w-full max-w-170 bg-[#0f172a]/80 border border-white/12 backdrop-blur-[30px] rounded-[18px] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.6)] animate-mac-open">
-            <h2 className="text-2xl font-bold text-white mb-5 text-center">
-              👥 Tim Pengembang
-            </h2>
-            <div className="text-sm text-[#cbd5e1] leading-relaxed mb-6 text-center space-y-1">
-              <p>
-                <b>Studio:</b> Enuma Technology (2026)
+          <main className="my-auto flex flex-col gap-8 py-8">
+            <header>{Wordmark}</header>
+            <div className="sq-rise max-w-xl rounded-[10px] bg-paper p-7 text-ink shadow-[0_24px_50px_rgba(0,0,0,0.5)] sm:p-9">
+              <h2 className="sq-display text-3xl font-bold">Tim pembuat</h2>
+              <dl className="mt-6 grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 border-y border-dashed border-ink/30 py-5 text-[15px]">
+                <dt className="text-ink/55">Studio</dt>
+                <dd className="font-medium">Enuma Technology (2026)</dd>
+                <dt className="text-ink/55">
+                  Lead programmer dan game designer
+                </dt>
+                <dd className="font-medium">Rizky Andika Sukma</dd>
+                <dt className="text-ink/55">3D artist dan environment</dt>
+                <dd className="font-medium">Anang Setiaji</dd>
+              </dl>
+              <p className="sq-mono mt-5 text-[12px] text-ink/65">
+                Three.js, React, Tailwind CSS, SQLite WASM, Vite
               </p>
-              <p>
-                <b>Lead Programmer & Game Designer:</b> Rizky Andika Sukma
-              </p>
-              <p>
-                <b>3D Artist & Environment:</b> Anang Setiaji
-              </p>
-              <p className="text-[#818cf8] text-xs font-mono mt-2.5">
-                Built with Three.js, React, Tailwind CSS, SQLite WASM & Vite
-              </p>
+              <button
+                onClick={() => setCurrentView("main")}
+                className={`mt-7 rounded-xl bg-ink px-6 py-3 text-[15px] font-semibold text-paper transition hover:bg-[#2b352f] ${FOCUS}`}
+              >
+                Kembali ke menu
+              </button>
             </div>
-            <button
-              onClick={() => setCurrentView("main")}
-              className="w-full bg-white/10 hover:bg-white/15 text-[#f8fafc] border border-white/15 p-3.5 rounded-xl text-sm font-semibold transition-all"
-            >
-              ⬅ Kembali
-            </button>
-          </div>
+          </main>
         )}
-      </div>
 
-      {/* Footer Bar */}
-      <footer className="relative z-20 w-full flex justify-between text-[#64748b] text-xs font-mono">
-        <span>SiQuery Engine v1.0 • React Ready</span>
-        <span>Enuma Technology © 2026</span>
-      </footer>
+        {/* Footer */}
+        <footer className="sq-mono mt-6 flex justify-between text-[11px] text-paper/40">
+          <span>SiQuery Engine v1.0</span>
+          <span>Enuma Technology © 2026</span>
+        </footer>
+      </div>
     </div>
   );
 };

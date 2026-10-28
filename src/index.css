@@ -1,7 +1,27 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,800&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap");
 @import "tailwindcss";
 
 /* 1. Konfigurasi Tema Tailwind v4 */
 @theme {
+  /* Font */
+  --font-sans:
+    "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono:
+    "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+
+  /* Palet meja kerja pustakawan */
+  --color-desk: #0e1714; /* meja hijau tua */
+  --color-panel: #15231e; /* bingkai monitor, jendela */
+  --color-panel-hi: #1c2f28; /* titlebar, hover */
+  --color-screen: #08110e; /* layar terminal */
+  --color-lamp: #f0b84b; /* cahaya lampu meja, aksen utama */
+  --color-paper: #efe6d0; /* kartu katalog, surat */
+  --color-ink: #1d2420; /* teks di atas kertas */
+  --color-phosphor: #9be8c9; /* teks layar terminal */
+  --color-sticky: #f6d66a; /* catatan tempel */
+
+  /* Nama lama dipertahankan supaya kelas di komponen lain tetap jalan */
   --color-mac-bg: var(--mac-bg);
   --color-mac-solid: var(--mac-bg-solid);
   --color-mac-sidebar: var(--mac-sidebar);
@@ -64,29 +84,28 @@
 
 /* 3. Variabel CSS */
 :root {
-  --mac-bg: rgba(30, 30, 32, 0.78);
-  --mac-bg-solid: #1e1e20;
-  --mac-sidebar: rgba(40, 40, 44, 0.72);
-  --mac-border: rgba(255, 255, 255, 0.1);
-  --mac-sep: rgba(255, 255, 255, 0.08);
-  --mac-text: #f5f5f7;
-  --mac-text-2: #a1a1a6;
-  --mac-accent: #0a84ff;
-  --mac-green: #30d158;
-  --mac-red: #ff453a;
-  --mac-yellow: #ffd60a;
-  --mac-orange: #ff9f0a;
+  --mac-bg: rgba(14, 23, 20, 0.82);
+  --mac-bg-solid: #0b1411;
+  --mac-sidebar: #12201b;
+  --mac-border: rgba(239, 230, 208, 0.12);
+  --mac-sep: rgba(239, 230, 208, 0.1);
+  --mac-text: #efe6d0;
+  --mac-text-2: #8fa89d;
+  --mac-accent: #f0b84b;
+  --mac-green: #5fc99a;
+  --mac-red: #e0674f;
+  --mac-yellow: #f6d66a;
+  --mac-orange: #f0b84b;
+  color-scheme: dark;
 }
 
 /* 4. Global Reset & Hilangkan Scrollbar Default */
 body {
-  background-color: #000;
+  background-color: #0e1714;
   color: var(--mac-text);
   overflow: hidden;
   height: 100vh;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue",
-    "Segoe UI", system-ui, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -100,6 +119,12 @@ body {
 * {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Seleksi teks mengikuti warna lampu */
+::selection {
+  background: rgba(240, 184, 75, 0.35);
+  color: #efe6d0;
 }
 
 /* 5. Utility Custom .no-scrollbar */
@@ -116,4 +141,13 @@ body {
 .animate-mac-minimize {
   display: flex !important;
   pointer-events: none;
+}
+
+/* 7. Hormati pengaturan reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-mac-open,
+  .animate-mac-close,
+  .animate-mac-minimize {
+    animation-duration: 0.01s !important;
+  }
 }

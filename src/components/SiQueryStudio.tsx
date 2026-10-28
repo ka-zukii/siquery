@@ -43,6 +43,9 @@ const TABLES_SCHEMA = [
   },
 ];
 
+const FOCUS =
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lamp";
+
 export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
   caseData,
 }) => {
@@ -54,6 +57,7 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
   );
   const [result, setResult] = useState<QueryResult | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [activeTable, setActiveTable] = useState<string | null>(null);
 
   const handleRunQuery = () => {
     setLocalError(null);
@@ -66,6 +70,7 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
   const handleQuickSelect = (tableName: string) => {
     const defaultQuery = `SELECT * FROM ${tableName};`;
     setQuery(defaultQuery);
+    setActiveTable(tableName);
     setLocalError(null);
     const res = executeQuery(defaultQuery);
     if (res) {
@@ -73,54 +78,76 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      if (!isLoading && isReady) handleRunQuery();
+    }
+  };
+
   const activeError = localError || dbError;
 
   return (
-    <div className="sql-app-layout grid grid-cols-[240px_1fr] h-full max-h-full font-mono overflow-hidden">
-      {/* Sidebar */}
-      <aside className="os-sidebar border-r border-white/8 p-[12px_10px] overflow-y-auto bg-[rgba(40,40,44,0.72)] max-h-full no-scrollbar">
-        <h3 className="os-panel-title text-[#a1a1a6] font-sans font-semibold text-[0.68rem] uppercase tracking-[0.6px] m-[2px_6px_8px]">
-          DATABASE SCHEMAS
+    <div className="sql-app-layout grid h-full max-h-full grid-cols-[230px_1fr] overflow-hidden font-mono">
+      {/* Sidebar skema */}
+      <aside className="os-sidebar no-scrollbar max-h-full overflow-y-auto border-r border-paper/10 bg-mac-sidebar p-[12px_10px]">
+        <h3 className="os-panel-title m-[2px_6px_8px] font-sans text-[0.72rem] font-semibold text-mac-muted">
+          Skema database
         </h3>
 
-        {TABLES_SCHEMA.map((tb) => (
-          <div
-            key={`schema-${tb.name}`}
-            className="os-schema-item mb-2.5 text-[0.78rem]"
-          >
-            <span
-              onClick={() => handleQuickSelect(tb.name)}
-              className="os-table-name text-[#f5f5f7] cursor-pointer p-[4px_8px] rounded-md transition-colors hover:bg-white/10 active:bg-[#0a84ff] block"
+        {TABLES_SCHEMA.map((tb) => {
+          const isActive = activeTable === tb.name;
+          return (
+            <div
+              key={`schema-${tb.name}`}
+              className="os-schema-item mb-2.5 text-[0.78rem]"
             >
-              📄 {tb.name}
-            </span>
-            <ul className="os-col-list list-none pl-4.5 text-[#a1a1a6] text-[0.7rem] mt-0.75 space-y-0.5">
-              {tb.cols.map((col) => (
-                <li key={`col-${tb.name}-${col}`}>{col}</li>
-              ))}
-            </ul>
-          </div>
-        ))}
+              <button
+                type="button"
+                onClick={() => handleQuickSelect(tb.name)}
+                className={`os-table-name flex w-full cursor-pointer items-center gap-2 rounded-md p-[4px_8px] text-left transition-colors ${FOCUS} ${
+                  isActive
+                    ? "bg-lamp/15 text-lamp"
+                    : "text-paper hover:bg-paper/8"
+                }`}
+              >
+                <span
+                  className={`h-2 w-2 shrink-0 rounded-sm ${isActive ? "bg-lamp" : "bg-paper/30"}`}
+                  aria-hidden="true"
+                />
+                {tb.name}
+              </button>
+              <ul className="os-col-list mt-1 ml-3.5 space-y-0.5 border-l border-paper/10 pl-3 text-[0.7rem] text-mac-muted">
+                {tb.cols.map((col) => (
+                  <li key={`col-${tb.name}-${col}`}>{col}</li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
       </aside>
 
-      {/* Main Section */}
-      <main className="os-main flex flex-col p-3.5 gap-3 overflow-y-auto h-full bg-[#121214]">
-        <section className="os-editor-section shrink-0 flex flex-col gap-2 max-h-62.5 overflow-y-auto">
-          <div className="os-toolbar flex justify-between items-center font-sans text-[0.8rem] text-[#a1a1a6]">
-            <span>SQL Console Editor</span>
-            <div className="os-toolbar-actions flex gap-2">
+      {/* Bagian utama */}
+      <main className="os-main flex h-full flex-col gap-3 overflow-y-auto bg-mac-solid p-3.5">
+        <section className="os-editor-section flex max-h-62.5 shrink-0 flex-col gap-2 overflow-y-auto">
+          <div className="os-toolbar flex items-center justify-between font-sans text-[0.8rem] text-mac-muted">
+            <span className="font-medium text-paper/85">Konsol SQL</span>
+            <div className="os-toolbar-actions flex items-center gap-2">
+              <span className="mr-1 hidden text-[0.7rem] text-mac-muted sm:inline">
+                Ctrl + Enter untuk menjalankan
+              </span>
               <button
                 onClick={() => setQuery("")}
-                className="os-btn-secondary bg-white/10 text-[#f5f5f7] border border-white/10 p-[5px_11px] rounded-md font-sans cursor-pointer text-[0.75rem] hover:bg-white/18 transition-all"
+                className={`os-btn-secondary cursor-pointer rounded-md border border-paper/20 bg-transparent p-[5px_11px] font-sans text-[0.75rem] text-paper transition-colors hover:border-paper/50 hover:bg-paper/8 ${FOCUS}`}
               >
-                Clear
+                Bersihkan
               </button>
               <button
                 onClick={handleRunQuery}
                 disabled={isLoading || !isReady}
-                className="os-btn-run bg-[#0a84ff] text-white border-none p-[5px_14px] rounded-md font-sans font-medium text-[0.78rem] cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.3)] hover:brightness-110 active:brightness-90 transition-all disabled:opacity-50"
+                className={`os-btn-run cursor-pointer rounded-md border-none bg-lamp p-[5px_14px] font-sans text-[0.78rem] font-semibold text-[#1d1608] shadow-[0_1px_2px_rgba(0,0,0,0.3)] transition-colors hover:bg-[#f6c765] active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS}`}
               >
-                {isLoading ? "Loading DB..." : "Run Query"}
+                {isLoading ? "Memuat database..." : "Jalankan kueri"}
               </button>
             </div>
           </div>
@@ -129,68 +156,82 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
             id="sql-input"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Ketik query SQL di sini..."
-            className="w-full bg-black/40 text-[#e5e5ea] border border-white/10 rounded-lg p-[10px_12px] font-mono text-[0.88rem] resize-none focus:outline-none focus:border-[#0a84ff] focus:ring-[3.5px] focus:ring-[#0a84ff]/35"
+            onKeyDown={handleKeyDown}
+            spellCheck={false}
+            placeholder="Ketik kueri SQL di sini..."
+            className="h-28 w-full resize-none rounded-lg border border-paper/12 bg-screen p-[10px_12px] font-mono text-[0.88rem] leading-relaxed text-phosphor caret-lamp shadow-[inset_0_0_30px_rgba(0,0,0,0.6)] placeholder:text-phosphor/35 focus:border-lamp focus:outline-none focus:ring-[3px] focus:ring-lamp/25"
           />
         </section>
 
         {caseData.hints.length > 0 && (
-          <div className="os-hint-box bg-[#ff9f0a]/15 border border-[#ff9f0a]/40 text-[#ffd60a] font-sans p-[8px_12px] rounded-lg text-[0.78rem]">
-            💡 <b>Petunjuk:</b> {caseData.hints[0]}
+          <div className="os-hint-box rotate-[-0.4deg] rounded-sm bg-sticky p-[9px_12px] font-sans text-[0.78rem] leading-snug text-[#3b2f08] shadow-[0_6px_14px_rgba(0,0,0,0.35)]">
+            <b>Petunjuk:</b> {caseData.hints[0]}
           </div>
         )}
 
-        <section className="os-result-section flex-1 flex flex-col overflow-hidden min-h-0">
+        <section className="os-result-section flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
           {activeError && (
-            <div className="os-error text-[#ff6961] p-[10px_12px] bg-[#ff453a]/14 border border-[#ff453a]/40 rounded-lg text-[0.8rem]">
-              ⚠️ {activeError}
+            <div className="os-error rounded-lg border border-mac-red/50 bg-mac-red/12 p-[10px_12px] font-sans text-[0.8rem] text-[#f0a08f]">
+              <b>Kueri gagal.</b> {activeError}
+            </div>
+          )}
+
+          {!activeError && !result && (
+            <div className="os-empty flex flex-1 items-center justify-center rounded-lg border border-dashed border-paper/15 p-4 text-center font-sans text-[0.82rem] text-mac-muted">
+              Belum ada hasil. Pilih tabel di kiri atau jalankan kueri untuk
+              melihat datanya.
             </div>
           )}
 
           {!activeError && result && (
-            <div className="os-table-wrapper flex-1 overflow-auto border border-white/10 rounded-lg bg-black/30 max-h-full">
-              {result.values.length === 0 ? (
-                <div className="os-empty text-[#a1a1a6] font-sans p-3 text-[0.82rem]">
-                  Query berhasil dieksekusi tetapi data kosong.
-                </div>
-              ) : (
-                <table className="os-table w-full border-collapse text-[0.8rem] whitespace-nowrap">
-                  <thead>
-                    <tr>
-                      {result.columns.map((col: string, idx: number) => (
-                        <th
-                          key={`th-${col}-${idx}`}
-                          className="bg-[#222225] text-[#a1a1a6] font-sans font-semibold text-[0.72rem] sticky top-0 z-10 border-b border-white/8 p-[7px_12px] text-left"
-                        >
-                          {col}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {result.values.map((row, rIdx) => (
-                      <tr
-                        key={`tr-row-${rIdx}`}
-                        className="hover:bg-[#0a84ff]/18 even:bg-white/2"
-                      >
-                        {row.map((val, cIdx) => (
-                          <td
-                            key={`td-cell-${rIdx}-${cIdx}`}
-                            className="border-b border-white/8 p-[7px_12px] text-left text-[#e5e5ea]"
+            <>
+              <div className="os-table-wrapper max-h-full flex-1 overflow-auto rounded-lg border border-paper/12 bg-screen">
+                {result.values.length === 0 ? (
+                  <div className="os-empty p-3 font-sans text-[0.82rem] text-mac-muted">
+                    Kueri berhasil dijalankan, tetapi datanya kosong.
+                  </div>
+                ) : (
+                  <table className="os-table w-full border-collapse text-[0.8rem] whitespace-nowrap">
+                    <thead>
+                      <tr>
+                        {result.columns.map((col: string, idx: number) => (
+                          <th
+                            key={`th-${col}-${idx}`}
+                            className="sticky top-0 z-10 border-b border-paper/12 bg-panel-hi p-[7px_12px] text-left font-sans text-[0.72rem] font-semibold text-lamp"
                           >
-                            {val === null ? (
-                              <i className="text-white/30">NULL</i>
-                            ) : (
-                              String(val)
-                            )}
-                          </td>
+                            {col}
+                          </th>
                         ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
+                    </thead>
+                    <tbody>
+                      {result.values.map((row, rIdx) => (
+                        <tr
+                          key={`tr-row-${rIdx}`}
+                          className="even:bg-paper/3 hover:bg-lamp/12"
+                        >
+                          {row.map((val, cIdx) => (
+                            <td
+                              key={`td-cell-${rIdx}-${cIdx}`}
+                              className="border-b border-paper/8 p-[7px_12px] text-left text-phosphor/90"
+                            >
+                              {val === null ? (
+                                <i className="text-paper/30">NULL</i>
+                              ) : (
+                                String(val)
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+              <p className="shrink-0 font-sans text-[0.72rem] text-mac-muted">
+                {result.values.length} baris
+              </p>
+            </>
           )}
         </section>
       </main>
