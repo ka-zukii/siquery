@@ -4,13 +4,13 @@ Langkah berikut menambahkan chapter baru ke SiQuery.
 
 ## 1. Buat Folder dan File Cerita
 
-Buat folder `src/cases/<nomor>-<judul-slug>/` dan file `story.ts` di dalamnya. Contoh: `src/cases/11-contoh-kasus/story.ts`.
+Buat folder `src/content/cases/<nomor>-<judul-slug>/` dan file `story.ts` di dalamnya. Contoh: `src/content/cases/11-contoh-kasus/story.ts`.
 
 Gunakan kerangka berikut:
 
 ```ts
 // Chapter 11: Contoh Kasus (tingkat menengah)
-import type { CaseData } from "../../types/case.types";
+import type { CaseData } from "@/types/case.types";
 
 export const contohKasusCase: CaseData = {
   id: "11-contoh-kasus",          // harus unik, sama dengan nama folder
@@ -52,7 +52,7 @@ export const contohKasusCase: CaseData = {
 
 ## 2. Daftarkan Chapter
 
-Buka `src/cases/index.ts` lalu:
+Buka `src/content/cases/index.ts` lalu:
 
 1. Import chapter baru:
    ```ts
@@ -66,7 +66,7 @@ Buka `src/cases/index.ts` lalu:
    ].sort(...)
    ```
 
-Jika chapter itu sebelumnya ada di `UPCOMING_CHAPTERS`, hapus entri placeholder-nya agar tidak tampil dua kali. Array `CASES` diurutkan otomatis berdasarkan `meta.number`.
+Jika chapter itu sebelumnya ada di `UPCOMING_CHAPTERS` di file yang sama, hapus entri placeholder-nya agar tidak tampil dua kali. Array `CASES` diurutkan otomatis berdasarkan `meta.number`.
 
 ## 3. Pilih Mode Validasi
 
@@ -99,7 +99,7 @@ Untuk chapter investigasi, kamu juga bisa menambahkan `clues` dan `emails` agar 
 
 ## 4. Tambahkan Objek di Meja (Opsional)
 
-Jika chapter memakai `clues`, setiap `ClueItem` perlu `objectName` yang sama dengan nama mesh di model 3D. Mesh itu harus sudah ada di model `.glb` atau dibuat di `buildDesk.ts`.
+Jika chapter memakai `clues`, setiap `ClueItem` perlu `objectName` yang sama dengan nama mesh di model 3D. Mesh itu harus sudah ada di model `.glb` atau dibuat di `src/features/desk-scene/buildDesk.ts`.
 
 ```ts
 clues: [
