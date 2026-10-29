@@ -8,7 +8,10 @@ import {
   type QueryFeedback,
 } from "@/shared/utils/checkAnswer";
 import { revealedHintCount } from "@/shared/utils/hints";
-import { readCompletedLessons, writeCompletedLessons } from "@/content/progress";
+import {
+  readCompletedLessons,
+  writeCompletedLessons,
+} from "@/content/progress";
 import type { Lesson, QueryResult } from "@/types/case.types";
 
 const FOCUS =
@@ -84,9 +87,7 @@ export const LessonPanel: React.FC<LessonPanelProps> = ({
       setMessage(null);
       setWrong((n) => n + 1);
       const orderOnly = current.ordered && isSameResult(res, expected);
-      setFeedback(
-        orderOnly ? { kind: "order" } : buildFeedback(res, expected),
-      );
+      setFeedback(orderOnly ? { kind: "order" } : buildFeedback(res, expected));
     }
   };
 
@@ -122,7 +123,7 @@ export const LessonPanel: React.FC<LessonPanelProps> = ({
           Semua pelajaran sudah selesai. Kamu sudah siap menangani tugas pertama
           di Meja Layanan.
         </p>
-      ) : (
+      ) : current ? (
         <>
           <p className="font-semibold">
             {index + 1}. {current.title}
@@ -166,7 +167,7 @@ export const LessonPanel: React.FC<LessonPanelProps> = ({
             </button>
           </div>
         </>
-      )}
+      ) : null}
 
       {feedback && !done && (
         <p className="mt-2 rounded-md border border-lamp/40 bg-lamp/12 p-2">
