@@ -21,6 +21,7 @@ import { buildDesk } from "./desk-scene/buildDesk";
 import { easeInOutCubic } from "./desk-scene/desk-scene.helpers";
 import { DocViewer } from "./DocViewer";
 import { useDb } from "../context/DatabaseContext";
+import { SolvedNotice } from "./SolvedNotice";
 
 export const DeskScene: React.FC<DeskSceneProps> = ({
   caseData,
@@ -37,6 +38,11 @@ export const DeskScene: React.FC<DeskSceneProps> = ({
   const { solved } = useDb();
   const solvedRef = useRef(solved);
   solvedRef.current = solved;
+
+  const [solvedOpen, setSolvedOpen] = useState(false);
+  useEffect(() => {
+    if (solved) setSolvedOpen(true);
+  }, [solved]);
 
   const cb = useRef({ onEnterPC, caseData });
   cb.current = { onEnterPC, caseData };
@@ -63,8 +69,8 @@ export const DeskScene: React.FC<DeskSceneProps> = ({
   }, [paused]);
 
   useEffect(() => {
-    sim.current.modalOpen = doc !== null;
-  }, [doc]);
+    sim.current.modalOpen = doc !== null || solvedOpen;
+  }, [doc, solvedOpen]);
 
   useEffect(() => {
     if (!doc) return;
@@ -428,6 +434,15 @@ export const DeskScene: React.FC<DeskSceneProps> = ({
 
       {/* Pembaca dokumen */}
       {doc && <DocViewer doc={doc} onClose={() => setDoc(null)} />}
+
+      {/* Notifikasi kasus terpecahkan */}
+      {solvedOpen && (
+        <SolvedNotice
+          caseData={caseData}
+          onClose={() => setSolvedOpen(false)}
+          onChooseChapter={onBack}
+        />
+      )}
     </div>
   );
 };
