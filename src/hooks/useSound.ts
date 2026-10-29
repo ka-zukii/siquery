@@ -2,16 +2,22 @@
 import { useCallback, useRef } from "react";
 import { getAudioSettings } from "./audioSettings";
 
-type SoundType = "click" | "open" | "close" | "error" | "success" | "slide";
+type SoundType = "click" | "open" | "close" | "error" | "success" | "slide" | "hover";
 
 // File ada di public/audio/effect/. BASE_URL menjaga path tetap benar
 const SOUND_PATHS: Record<SoundType, string> = {
-  click: "",
+  click: `${import.meta.env.BASE_URL}audio/effect/mouse-click.mp3`,
   open: "",
   close: "",
   error: "",
-  success: "",
+  hover: `${import.meta.env.BASE_URL}audio/effect/hover.mp3`,
+  success: ``,
   slide: `${import.meta.env.BASE_URL}audio/effect/chapter_slide.mp3`,
+};
+
+const GAIN: Partial<Record<SoundType, number>> = {
+  hover: 0.4,
+  click: 1,
 };
 
 const BASE_VOLUME = 0.5;
@@ -28,13 +34,14 @@ export const useSound = () => {
 
   const playSound = useCallback(
     (type: SoundType, { durationMs }: PlayOptions = {}) => {
+      if (!SOUND_PATHS[type]) return;
       // Hentikan pemutaran sebelumnya dari jenis yang sama
       audiosRef.current[type]?.pause();
       window.clearTimeout(timersRef.current[type]);
 
       const audio = new Audio(SOUND_PATHS[type]);
       // Volume dibaca saat diputar, jadi perubahan slider langsung berlaku
-      audio.volume = BASE_VOLUME * getAudioSettings().sfx;
+      audio.volume = BASE_VOLUME * (GAIN[type] ?? 1) * getAudioSettings().sfx;
       audiosRef.current[type] = audio;
       audio.play().catch(() => {
         // Autoplay blocked by browser policy until user interaction

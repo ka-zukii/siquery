@@ -5,6 +5,7 @@ import {
 } from "../../../hooks/audioSettings";
 import { useSound } from "../../../hooks/useSound";
 import { FOCUS } from "../constants/styles";
+import { useButtonSound } from "../../../hooks/useButtonSound";
 
 interface SliderRowProps {
   id: string;
@@ -46,6 +47,7 @@ const SliderRow: React.FC<SliderRowProps> = ({
 export const AudioSettingsPanel: React.FC<{ onBack: () => void }> = ({
   onBack,
 }) => {
+  const { clickThen} = useButtonSound();
   const { bgm, sfx } = useAudioSettings();
   const { playSound } = useSound();
 
@@ -71,7 +73,7 @@ export const AudioSettingsPanel: React.FC<{ onBack: () => void }> = ({
       </div>
 
       <button
-        onClick={onBack}
+        onClick={clickThen(onBack)}
         className={`mt-7 rounded-xl bg-ink px-6 py-3 text-[15px] font-semibold text-paper transition hover:bg-[#2b352f] ${FOCUS}`}
       >
         Kembali ke menu
