@@ -26,6 +26,7 @@ export const DesktopDock: React.FC<DesktopDockProps> = ({
   return (
     <nav
       aria-label="Dock"
+      data-tour="dock"
       onMouseLeave={() => setDockHover(null)}
       className="absolute bottom-2 left-1/2 z-100 flex -translate-x-1/2 items-end gap-2 rounded-[22px] border border-paper/20 bg-paper/10 px-2.5 pb-1.5 pt-2 shadow-[0_18px_44px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-2xl"
     >
@@ -72,7 +73,7 @@ export const DesktopDock: React.FC<DesktopDockProps> = ({
             className="mb-2.5 h-10 w-px self-end bg-paper/20"
             aria-hidden="true"
           />
-          <div className="relative flex flex-col items-center">
+          <div data-tour="dock-exit" className="relative flex flex-col items-center">
             {dockHover === EXIT_INDEX && (
               <span className="pointer-events-none absolute -top-9 whitespace-nowrap rounded-md border border-paper/15 bg-desk/85 px-2.5 py-1 text-[0.72rem] text-paper shadow-lg backdrop-blur-xl">
                 Kembali ke meja

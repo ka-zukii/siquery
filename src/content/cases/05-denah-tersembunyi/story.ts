@@ -17,6 +17,12 @@ export const denahTersembunyiCase: CaseData = {
   briefing:
     "Denah Kota Lama Batavia tidak lagi tercatat di rak, dan riwayat peminjamannya tidak lengkap. Susun ulang seluruh kejadian untuk buku BK-DNH: siapa yang meminjam, mengembalikan, dan menerima buku dari orang lain, diurutkan menurut tanggal. Tampilkan tanggal, nama anggota, dan keterangan kejadiannya.",
 
+  cheatJoin: {
+    a: "peminjaman",
+    aKey: "anggota_id",
+    b: "anggota",
+    bKey: "anggota_id",
+  },
   hints: [
     "Riwayat denah berasal dari dua sumber: tabel peminjaman (untuk pinjam dan kembali) dan pindah_tangan. Gabungkan keduanya dengan UNION ALL di dalam WITH.",
     "Tentukan jenis setiap kejadian dengan CASE, lalu ambil nama anggotanya dengan JOIN ke tabel anggota.",

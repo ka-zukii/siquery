@@ -43,11 +43,17 @@ export const SolvedNotice = ({ caseData, onClose, onChooseChapter }: Props) => {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  const isLatihan = Boolean(caseData.lessons);
   const hasReport = Boolean(caseData.report);
-  const stampText = hasReport ? "DITERIMA" : "TERPECAHKAN";
-  const message =
-    caseData.report?.successMessage ??
-    "Hasil kueri sudah sesuai dengan target tugas.";
+  const stampText = isLatihan
+    ? "LATIHAN SELESAI"
+    : hasReport
+      ? "DITERIMA"
+      : "TERPECAHKAN";
+  const message = isLatihan
+    ? "Semua pelajaran latihan sudah selesai. Kamu siap menangani kasus pertama."
+    : (caseData.report?.successMessage ??
+      "Hasil kueri sudah sesuai dengan target tugas.");
 
   return (
     <div

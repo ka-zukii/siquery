@@ -17,6 +17,13 @@ export const malamTerakhirCase: CaseData = {
   briefing:
     "Kunci cadangan bocor, lalu malam itu Ruang Koleksi Khusus dibuka sebentar. Susun semua petunjuk dari email, log akses, dan barang bukti. Tentukan siapa dalangnya dan kartu mana yang dipakai untuk masuk.",
 
+  cheatJoin: {
+    a: "email_log",
+    aKey: "dari",
+    b: "akses_ruangan",
+    bKey: "nama",
+    on: "b.nama LIKE '%' || <bagian nama dari a.dari> || '%'",
+  },
   hints: [
     "Gabungkan email dengan log akses lewat nama anggota, lalu lihat siapa yang berada di ruangan tanpa alasan yang jelas.",
     "Perhatikan waktu. Siapa yang sudah selesai jaga atau pergi lebih dulu, tetapi kartunya tetap tercatat masuk?",

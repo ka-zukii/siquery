@@ -74,6 +74,7 @@ export const DesktopIcons: React.FC<DesktopIconsProps> = ({
   return (
     <div
       ref={rootRef}
+      data-tour="desktop-icons"
       className="desktop-icons absolute right-4 top-11 z-10 flex flex-col items-center gap-5"
     >
       {ICONS.map((item) => {

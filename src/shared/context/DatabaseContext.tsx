@@ -46,6 +46,8 @@ interface DatabaseContextType {
   markSolved: () => void;
   /** Seberapa dekat kueri terakhir dengan target. Null bila belum ada atau sudah benar. */
   feedback: QueryFeedback | null;
+  /** Jumlah kueri yang belum tepat untuk chapter ini, dipakai untuk petunjuk bertahap */
+  wrongCount: number;
   /** Isi editor SQL yang bertahan walau komputer ditutup */
   sqlDraft: SqlDraft;
   updateDraft: (patch: Partial<SqlDraft>) => void;
@@ -56,12 +58,15 @@ const DatabaseContext = createContext<DatabaseContextType | null>(null);
 export const DatabaseProvider: React.FC<{
   schemaSql: string;
   answerSql?: string;
+  /** Chapter yang sudah selesai sebelumnya, supaya tidak memicu notifikasi ulang */
+  initialSolved?: boolean;
   children: ReactNode;
-}> = ({ schemaSql, answerSql, children }) => {
+}> = ({ schemaSql, answerSql, initialSolved = false, children }) => {
   const db = useDatabase(schemaSql);
-  const [solved, setSolved] = useState(false);
+  const [solved, setSolved] = useState(initialSolved);
   const markSolved = useCallback(() => setSolved(true), []);
   const [feedback, setFeedback] = useState<QueryFeedback | null>(null);
+  const [wrongCount, setWrongCount] = useState(0);
 
   // Kueri awal memakai tabel pertama dari kasus ini, bukan tabel dari kasus lain
   const [sqlDraft, setSqlDraft] = useState<SqlDraft>(() => {
@@ -96,6 +101,7 @@ export const DatabaseProvider: React.FC<{
             setFeedback(null);
           } else {
             setFeedback(buildFeedback(res, expected));
+            setWrongCount((n) => n + 1);
           }
         }
       }
@@ -110,6 +116,7 @@ export const DatabaseProvider: React.FC<{
     solved,
     markSolved,
     feedback,
+    wrongCount,
     sqlDraft,
     updateDraft,
   };

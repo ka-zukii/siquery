@@ -1,6 +1,7 @@
 // Daftar seluruh chapter. Urutan ditentukan oleh meta.number.
 import type { CaseData } from "@/types/case.types";
 import type { Chapter } from "@/features/menu/types";
+import { kelasLatihanCase } from "./00-kelas-latihan/story";
 import { pendaftaranAnggotaCase } from "./01-pendaftaran-anggota/story";
 import { kartuAktifCase } from "./02-kartu-aktif/story";
 import { missingManuscriptCase } from "./06-missing-manuscript/story";
@@ -10,6 +11,7 @@ import { denahTersembunyiCase } from "./05-denah-tersembunyi/story";
 
 /** Chapter yang sudah bisa dimainkan */
 export const CASES: CaseData[] = [
+  kelasLatihanCase,
   pendaftaranAnggotaCase,
   kartuAktifCase,
   missingManuscriptCase,

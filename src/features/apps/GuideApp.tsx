@@ -4,13 +4,16 @@ import { faCircle, faCircleCheck } from "@fortawesome/free-solid-svg-icons";
 import type { CaseData } from "@/types/case.types";
 import { useDb } from "@/shared/context/DatabaseContext";
 import { buildCheatSheet } from "@/content/cheatSheet";
+import { GLOSSARY } from "@/content/glossary";
+import { revealedHintCount } from "@/shared/utils/hints";
 
-type Tab = "tugas" | "cara" | "sql";
+type Tab = "tugas" | "cara" | "sql" | "glosarium";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "tugas", label: "Tugas" },
   { id: "cara", label: "Cara main" },
   { id: "sql", label: "Cheat SQL" },
+  { id: "glosarium", label: "Glosarium" },
 ];
 
 const CARA_MAIN = [
@@ -32,8 +35,12 @@ const CARA_MAIN = [
   },
 ];
 
-export const GuideApp: React.FC<{ caseData: CaseData }> = ({ caseData }) => {
-  const { sqlDraft, solved } = useDb();
+export const GuideApp: React.FC<{
+  caseData: CaseData;
+  /** Memutar ulang tur pengenalan dari awal */
+  onReplayTour?: () => void;
+}> = ({ caseData, onReplayTour }) => {
+  const { sqlDraft, solved, wrongCount } = useDb();
   const [tab, setTab] = useState<Tab>("tugas");
   const cheat = useMemo(() => buildCheatSheet(caseData), [caseData]);
 
@@ -135,11 +142,30 @@ export const GuideApp: React.FC<{ caseData: CaseData }> = ({ caseData }) => {
             {caseData.hints.length > 0 && (
               <div>
                 <p className="mb-2 text-sm font-semibold">Petunjuk</p>
-                <ul className="list-disc space-y-1.5 pl-5 text-sm opacity-90">
-                  {caseData.hints.map((h, i) => (
-                    <li key={i}>{h}</li>
-                  ))}
-                </ul>
+                {caseData.lessons ? (
+                  <p className="text-sm opacity-80">
+                    Petunjuk setiap pelajaran ada di panel Kelas latihan.
+                  </p>
+                ) : (
+                  <>
+                    <ul className="list-disc space-y-1.5 pl-5 text-sm opacity-90">
+                      {caseData.hints
+                        .slice(
+                          0,
+                          revealedHintCount(wrongCount, caseData.hints.length),
+                        )
+                        .map((h, i) => (
+                          <li key={i}>{h}</li>
+                        ))}
+                    </ul>
+                    {revealedHintCount(wrongCount, caseData.hints.length) <
+                      caseData.hints.length && (
+                      <p className="mt-2 text-[0.75rem] opacity-60">
+                        Salah lagi untuk membuka petunjuk berikutnya.
+                      </p>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -161,6 +187,22 @@ export const GuideApp: React.FC<{ caseData: CaseData }> = ({ caseData }) => {
               </li>
             ))}
           </ol>
+        )}
+
+        {tab === "cara" && onReplayTour && (
+          <div className="mt-6 rounded-lg border border-black/10 p-3">
+            <p className="text-sm font-semibold">Tur pengenalan</p>
+            <p className="mt-0.5 text-[0.78rem] opacity-70">
+              Ulangi penjelasan tampilan meja dan DB Studio dari awal.
+            </p>
+            <button
+              type="button"
+              onClick={onReplayTour}
+              className="mt-2 rounded-md bg-black/10 px-3 py-1.5 text-[0.8rem] font-semibold hover:bg-black/15"
+            >
+              Putar ulang tur
+            </button>
+          </div>
         )}
 
         {tab === "sql" && (
@@ -228,6 +270,21 @@ export const GuideApp: React.FC<{ caseData: CaseData }> = ({ caseData }) => {
               petunjuk.
             </p>
           </div>
+        )}
+        {tab === "glosarium" && (
+          <dl className="space-y-3">
+            {GLOSSARY.map((g) => (
+              <div key={g.istilah} className="rounded-lg border border-black/10 p-3">
+                <dt className="font-mono text-[0.85rem] font-semibold">
+                  {g.istilah}
+                </dt>
+                <dd className="mt-1 text-sm opacity-85">{g.arti}</dd>
+                <dd className="mt-1.5 font-mono text-[0.72rem] opacity-60">
+                  {g.contoh}
+                </dd>
+              </div>
+            ))}
+          </dl>
         )}
       </div>
     </div>

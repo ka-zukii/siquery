@@ -17,6 +17,12 @@ export const jejakPeminjamanCase: CaseData = {
   briefing:
     "Rak sirkulasi kehilangan jejak beberapa buku. Tampilkan semua peminjaman yang belum dikembalikan, beserta nama peminjam dan judul bukunya, diurutkan dari tanggal pinjam paling lama. Peminjam yang sudah tidak terdaftar di data anggota tetap harus ikut ditampilkan.",
 
+  cheatJoin: {
+    a: "borrowing_records",
+    aKey: "member_id",
+    b: "members",
+    bKey: "member_id",
+  },
   hints: [
     "Peminjaman yang belum dikembalikan punya return_date kosong. Cari dengan WHERE return_date IS NULL.",
     "Tidak semua peminjam masih terdaftar di tabel members. Gunakan LEFT JOIN supaya peminjaman dari anggota yang sudah dihapus tetap muncul.",

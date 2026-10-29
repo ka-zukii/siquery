@@ -56,6 +56,36 @@ export interface EmailItem {
   body: string;
 }
 
+/** Satu pelajaran dalam chapter latihan. Pemain harus menghasilkan baris jawaban. */
+export interface Lesson {
+  id: string;
+  title: string;
+  /** Penjelasan konsep SQL yang dipakai */
+  explanation: string;
+  /** Contoh kueri yang berbeda dari jawaban */
+  exampleSql: string;
+  /** Tugas yang harus diselesaikan */
+  prompt: string;
+  /** Kueri target untuk pelajaran ini */
+  answerSql: string;
+  /** Bila true, urutan baris juga dicek (untuk ORDER BY) */
+  ordered?: boolean;
+  /** Petunjuk bertahap: makin banyak salah, makin banyak yang terbuka */
+  hints?: string[];
+}
+
+/** Kunci gabung untuk contekan JOIN. Bila tidak diisi, kunci dicari otomatis dari skema. */
+export interface CheatJoin {
+  /** Tabel pertama (alias a) dan kolom yang dipakai untuk menggabungkan */
+  a: string;
+  aKey: string;
+  /** Tabel kedua (alias b) dan kolom yang dipakai untuk menggabungkan */
+  b: string;
+  bKey: string;
+  /** Kondisi gabung kustom bila bukan kesamaan nilai kolom. Pakai awalan a. dan b. */
+  on?: string;
+}
+
 export interface CaseData {
   id: string;
   title: string;
@@ -66,6 +96,10 @@ export interface CaseData {
   clues?: ClueItem[];
   emails?: EmailItem[];
   hints: string[];
+  /** Chapter latihan: pelajaran berurutan. Bila ada, validasi per pelajaran. */
+  lessons?: Lesson[];
+  /** Kunci gabung untuk contekan JOIN */
+  cheatJoin?: CheatJoin;
   /**
    * Kueri target. Jika hasil kueri pemain memuat semua baris dari hasil ini,
    * tiket ditandai selesai. Kosongkan bila chapter belum punya validasi.

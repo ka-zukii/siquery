@@ -17,6 +17,12 @@ export const dendaTakDibayarCase: CaseData = {
   briefing:
     "Bendahara perpustakaan menemukan selisih di buku denda bulan ini. Tampilkan setiap anggota beserta total denda yang masih berstatus BELUM, termasuk anggota yang tidak punya denda sama sekali (tampilkan 0).",
 
+  cheatJoin: {
+    a: "denda",
+    aKey: "anggota_id",
+    b: "anggota",
+    bKey: "anggota_id",
+  },
   hints: [
     "Mulai dari tabel anggota, lalu gabungkan dengan denda dengan LEFT JOIN supaya semua anggota tetap tampil.",
     "Letakkan syarat status = 'BELUM' di dalam ON, bukan di WHERE. Kalau di WHERE, anggota tanpa denda ikut hilang.",

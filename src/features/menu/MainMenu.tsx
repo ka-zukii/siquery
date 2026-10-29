@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { CASES, UPCOMING_CHAPTERS, caseToChapter } from "@/content/cases";
+import { caseProgress, clearCaseProgress, isCaseSolved } from "@/content/progress";
 import type { Chapter } from "./types";
 import { TerminalPreview } from "./components/TerminalPreview";
 import { CatalogCard } from "./components/CatalogCard";
@@ -51,7 +52,14 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onStartCase }) => {
   const prevChapterIndexRef = useRef(currentChapterIndex);
 
   // Semua chapter diurutkan berdasarkan nomornya
-  const chapters: Chapter[] = [...CASES.map(caseToChapter), ...UPCOMING_CHAPTERS].sort((a, b) => a.number.localeCompare(b.number));
+  const chapters: Chapter[] = [
+    ...CASES.map((c) => ({ ...caseToChapter(c), progress: caseProgress(c) })),
+    ...UPCOMING_CHAPTERS,
+  ].sort((a, b) => a.number.localeCompare(b.number));
+
+  // Ringkasan progres: berapa kasus selesai dan kasus mana yang berikutnya
+  const solvedCount = CASES.filter((c) => isCaseSolved(c.id)).length;
+  const nextCase = CASES.find((c) => !isCaseSolved(c.id));
 
   const total = chapters.length;
   const WINDOW_SIZE = 5;
@@ -61,8 +69,18 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onStartCase }) => {
   const goPrev = () => setCurrentChapterIndex((i) => (i - 1 + total) % total);
   const goNext = () => setCurrentChapterIndex((i) => (i + 1) % total);
 
+  // Main ulang harus dikonfirmasi dulu, karena progres akan direset
+  const [confirmReplay, setConfirmReplay] = useState(false);
+  useEffect(() => setConfirmReplay(false), [currentChapterIndex]);
+
   const handlePlaySelected = () => {
-    if (currentChapter.isAvailable) onStartCase(currentChapter.id);
+    if (!currentChapter.isAvailable) return;
+    if (currentChapter.progress?.done && !confirmReplay) {
+      setConfirmReplay(true);
+      return;
+    }
+    if (currentChapter.progress?.done) clearCaseProgress(currentChapter.id);
+    onStartCase(currentChapter.id);
   };
 
   // Navigasi keyboard
@@ -154,6 +172,14 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onStartCase }) => {
               <div className="sq-rise">
                 <h2 className="sq-display text-4xl font-bold leading-tight text-paper">Pilih kasus dari laci katalog</h2>
                 <p className="mt-4 max-w-[38ch] text-[16px] leading-relaxed text-paper/75">Setiap kartu adalah satu tumpukan tiket tugas. Geser dengan tombol panah atau tombol kiri dan kanan di keyboard.</p>
+                <p className="sq-mono mt-5 text-[13px] text-paper/70">
+                  Progres: {solvedCount} dari {CASES.length} kasus selesai
+                </p>
+                <p className="sq-sans mt-1 text-[14px] text-paper/60">
+                  {nextCase
+                    ? `Berikutnya: Kasus ${nextCase.meta.number} · ${nextCase.title}`
+                    : "Semua kasus sudah selesai."}
+                </p>
 
                 <div className="mt-8">
                   <p className="sq-mono mb-3 text-[13px] text-paper/60">
@@ -200,12 +226,37 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onStartCase }) => {
                   </div>
                 </div>
 
+                {confirmReplay && currentChapter.progress?.done && (
+                  <div
+                    role="alertdialog"
+                    aria-label="Konfirmasi main ulang"
+                    className="sq-sans mt-6 max-w-sm rounded-xl border border-lamp/40 bg-desk/80 p-4 text-[14px] text-paper/90"
+                  >
+                    <p>
+                      Progres kasus {currentChapter.number} akan direset dan
+                      kasus dimulai dari awal. Lanjutkan?
+                    </p>
+                    <div className="mt-3 flex gap-3">
+                      <button onClick={() => setConfirmReplay(false)} className={`${ghostBtn} flex-1`}>
+                        Batal
+                      </button>
+                      <button onClick={clickThen(handlePlaySelected)} className={`${primaryBtn} flex-1`}>
+                        Ya, mulai ulang
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="mt-8 flex max-w-sm gap-3">
                   <button onClick={clickThen(() => setCurrentView("main"))} className={`${ghostBtn} flex-1`} {...hoverSound}>
                     Kembali
                   </button>
                   <button onClick={clickThen(handlePlaySelected)} disabled={!currentChapter.isAvailable} className={`${primaryBtn} flex-[1.6]`} {...hoverSound}>
-                    {currentChapter.isAvailable ? "Mulai investigasi" : "Segera hadir"}
+                    {currentChapter.isAvailable
+                      ? currentChapter.progress?.done
+                        ? "Main ulang"
+                        : "Mulai investigasi"
+                      : "Segera hadir"}
                   </button>
                 </div>
               </div>

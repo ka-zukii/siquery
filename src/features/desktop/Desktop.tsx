@@ -15,6 +15,17 @@ import { DesktopIcons } from "./components/DesktopIcons";
 import { DesktopAppWindows } from "./components/DesktopAppWindows";
 import { DesktopDock } from "./components/DesktopDock";
 import { getInbox } from "@/shared/utils/inbox";
+import { CoachMarks } from "@/shared/ui/CoachMarks";
+import {
+  DESKTOP_TOUR,
+  DESKTOP_TOUR_KEY,
+  STUDIO_TOUR,
+  STUDIO_TOUR_KEY,
+  isTourDone,
+  markTourDone,
+} from "@/content/coachMarks";
+import { clearTourDone } from "@/content/coachMarks";
+import { markCaseSolved } from "@/content/progress";
 
 interface DesktopProps {
   caseData: CaseData;
@@ -47,7 +58,10 @@ export const Desktop: React.FC<DesktopProps> = ({
   const wasSolved = useRef(solved);
   const [solvedOpen, setSolvedOpen] = useState(false);
   useEffect(() => {
-    if (solved && !wasSolved.current) setSolvedOpen(true);
+    if (solved && !wasSolved.current) {
+      setSolvedOpen(true);
+      markCaseSolved(caseData.id);
+    }
     wasSolved.current = solved;
   }, [solved]);
 
@@ -69,6 +83,46 @@ export const Desktop: React.FC<DesktopProps> = ({
       { id: "music", title: "Musik" },
       { id: "guide", title: "Panduan" },
     ]);
+
+  // Tur pengenalan: meja dulu, lalu DB Studio saat pertama kali dibuka
+  const [desktopTourDone, setDesktopTourDone] = useState(() =>
+    isTourDone(DESKTOP_TOUR_KEY),
+  );
+  const [desktopTourOn, setDesktopTourOn] = useState(false);
+  const [studioTourDone, setStudioTourDone] = useState(() =>
+    isTourDone(STUDIO_TOUR_KEY),
+  );
+
+  useEffect(() => {
+    if (desktopTourDone) return;
+    const t = setTimeout(() => setDesktopTourOn(true), 700);
+    return () => clearTimeout(t);
+  }, [desktopTourDone]);
+
+  const finishDesktopTour = useCallback(() => {
+    markTourDone(DESKTOP_TOUR_KEY);
+    setDesktopTourOn(false);
+    setDesktopTourDone(true);
+  }, []);
+
+  const finishStudioTour = useCallback(() => {
+    markTourDone(STUDIO_TOUR_KEY);
+    setStudioTourDone(true);
+  }, []);
+
+  // Dari panduan: tur meja diputar ulang, lalu tur Studio menyusul
+  const replayTours = useCallback(() => {
+    clearTourDone(DESKTOP_TOUR_KEY);
+    clearTourDone(STUDIO_TOUR_KEY);
+    setStudioTourDone(false);
+    setDesktopTourDone(false);
+  }, []);
+
+  // Panduan lama untuk chapter 01 tampil dulu, tur Studio menyusul
+  const studioTourOn =
+    windows["siquery"].isOpen &&
+    desktopTourDone &&
+    !studioTourDone;
 
   // Jam di menubar berjalan
   useEffect(() => {
@@ -137,7 +191,7 @@ export const Desktop: React.FC<DesktopProps> = ({
       </div>
 
       {/* Menubar */}
-      <header className="absolute left-0 right-0 top-0 z-100 flex h-7 items-center justify-between border-b border-paper/8 bg-desk/60 px-2 text-xs font-medium text-mac-text backdrop-blur-[30px]">
+      <header data-tour="menubar" className="absolute left-0 right-0 top-0 z-100 flex h-7 items-center justify-between border-b border-paper/8 bg-desk/60 px-2 text-xs font-medium text-mac-text backdrop-blur-[30px]">
         <div className="flex items-center gap-1">
           {/* Menu logo (setara menu apel) */}
           <div className="relative">
@@ -247,6 +301,7 @@ export const Desktop: React.FC<DesktopProps> = ({
         inbox={inbox}
         readMail={readMail}
         onReadMail={markMailRead}
+        onReplayTour={replayTours}
       />
 
       <DesktopDock windows={windows} onExit={onExit} onOpen={handleAppOpen} />
@@ -259,6 +314,16 @@ export const Desktop: React.FC<DesktopProps> = ({
           onChooseChapter={() => onChooseChapter?.()}
         />
       )}
+      <CoachMarks
+        steps={DESKTOP_TOUR}
+        active={desktopTourOn}
+        onDone={finishDesktopTour}
+      />
+      <CoachMarks
+        steps={STUDIO_TOUR}
+        active={studioTourOn}
+        onDone={finishStudioTour}
+      />
     </div>
   );
 };

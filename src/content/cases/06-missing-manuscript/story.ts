@@ -21,6 +21,12 @@ export const missingManuscriptCase: CaseData = {
     "Manuskrip kuno abad ke-15 'Codex Nusantara' lenyap tanpa jejak kerusakan fisik dari Ruang Koleksi Khusus Perpustakaan Universitas. Kartu akses Dr. Hendra dilaporkan hilang sehari sebelum kejadian. Telusuri database untuk mengetahui siapa yang memakai kartu itu, lalu isi formulir laporan.",
 
   // Petunjuk untuk pengusutan
+  cheatJoin: {
+    a: "borrowing_records",
+    aKey: "member_id",
+    b: "members",
+    bKey: "member_id",
+  },
   hints: [
     "Dr. Hendra melapor kartunya hilang tanggal 24 Oktober. Cari kartu itu di access_logs pada 25 Oktober malam.",
     "Cari tahu siapa yang berada di ruang bimbingan saat kartu hilang, dan siapa yang masih meminjam buku sistem kunci atau katalog manuskrip.",

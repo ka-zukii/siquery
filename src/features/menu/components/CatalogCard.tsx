@@ -68,12 +68,18 @@ export const CatalogCard: React.FC<{
       {/* Stempel status */}
       <div
         className={`sq-sans absolute right-5 top-5 -rotate-6 rounded border-2 px-2.5 py-1 text-[11px] font-bold tracking-[0.12em] ${
-          chapter.isAvailable
-            ? "border-[#2f7a55] text-[#2f7a55]"
-            : "border-ink/40 text-ink/50"
+          chapter.progress?.done
+            ? "border-[#2f7a55] bg-[#2f7a55] text-paper"
+            : chapter.isAvailable
+              ? "border-[#2f7a55] text-[#2f7a55]"
+              : "border-ink/40 text-ink/50"
         }`}
       >
-        {chapter.isAvailable ? "TERSEDIA" : "SEGERA HADIR"}
+        {chapter.progress?.done
+          ? "SELESAI"
+          : chapter.isAvailable
+            ? "TERSEDIA"
+            : "SEGERA HADIR"}
       </div>
 
       <p className="sq-sans mt-1 max-w-[70%] text-[13px] text-ink/60">
@@ -93,6 +99,12 @@ export const CatalogCard: React.FC<{
         <dd className="font-medium">
           <LevelDots level={chapter.level} label={chapter.levelLabel} />
         </dd>
+        {chapter.progress && (
+          <>
+            <dt className="text-ink/55">Progres</dt>
+            <dd className="font-medium">{chapter.progress.label}</dd>
+          </>
+        )}
       </dl>
 
       <p className="sq-sans mt-4 text-[14px] leading-relaxed text-ink/85">

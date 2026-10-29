@@ -1,4 +1,4 @@
-import type { CaseData } from "@/types/case.types";
+import type { CaseData, CheatJoin } from "@/types/case.types";
 import { parseSchema, type SchemaTable } from "@/shared/utils/parseSchema";
 
 export interface CheatEntry {
@@ -7,16 +7,70 @@ export interface CheatEntry {
   kode: string;
 }
 
-/** Mencari dua tabel yang punya kolom dengan nama sama, dipakai sebagai kunci gabung */
-const pickPair = (tables: SchemaTable[]) => {
-  for (let i = 0; i < tables.length; i++) {
-    for (let j = 0; j < tables.length; j++) {
-      if (i === j) continue;
-      const key = tables[i].cols.find((c) => tables[j].cols.includes(c));
-      if (key) return { a: tables[i], b: tables[j], key };
+interface JoinPair {
+  a: SchemaTable;
+  b: SchemaTable;
+  /** Kolom di tabel a yang dipakai untuk menggabungkan */
+  aKey: string;
+  /** Kolom di tabel b yang dipakai untuk menggabungkan */
+  bKey: string;
+  /** Kondisi gabung kustom, bila ada */
+  on?: string;
+}
+
+/** Memakai kunci yang ditulis di chapter, bila tabelnya ada di skema */
+const configuredPair = (
+  tables: SchemaTable[],
+  cfg?: CheatJoin,
+): JoinPair | null => {
+  if (!cfg) return null;
+  const a = tables.find((t) => t.name === cfg.a);
+  const b = tables.find((t) => t.name === cfg.b);
+  if (!a || !b) return null;
+  return { a, b, aKey: cfg.aKey, bKey: cfg.bKey, on: cfg.on };
+};
+
+/**
+ * Mencari pasangan tabel untuk contoh JOIN. Urutan prioritas:
+ * 1. Kunci asing: tabel a punya kolom "<nama tabel b>_id" dan tabel b punya kolom id.
+ * 2. Kolom bersama selain id (misalnya kode_kelas di kedua tabel).
+ * 3. Kolom id bersama, hanya bila tidak ada pilihan lain.
+ */
+const pickPair = (tables: SchemaTable[]): JoinPair | null => {
+  for (const a of tables) {
+    for (const b of tables) {
+      if (a === b || !b.cols.includes("id")) continue;
+      const fk = a.cols.find(
+        (c) => c.endsWith("_id") && b.name.startsWith(c.slice(0, -3)),
+      );
+      if (fk) return { a, b, aKey: fk, bKey: "id" };
     }
   }
+
+  for (const a of tables) {
+    for (const b of tables) {
+      if (a === b) continue;
+      const shared = a.cols.find((c) => c !== "id" && b.cols.includes(c));
+      if (shared) return { a, b, aKey: shared, bKey: shared };
+    }
+  }
+
+  for (const a of tables) {
+    for (const b of tables) {
+      if (a !== b && a.cols.includes("id") && b.cols.includes("id")) {
+        return { a, b, aKey: "id", bKey: "id" };
+      }
+    }
+  }
+
   return null;
+};
+
+/** Kolom yang layak ditampilkan di contoh: tanpa kunci gabung, dan id hanya bila tidak ada pilihan lain */
+const displayCols = (cols: string[], exclude: string[]): string[] => {
+  const rest = cols.filter((c) => !exclude.includes(c));
+  const nonId = rest.filter((c) => c !== "id");
+  return nonId.length > 0 ? nonId : rest;
 };
 
 /**
@@ -25,19 +79,26 @@ const pickPair = (tables: SchemaTable[]) => {
  */
 export const buildCheatSheet = (caseData: CaseData) => {
   const tables = parseSchema(caseData.schemaSql);
-  const pair = pickPair(tables);
+  const pair = configuredPair(tables, caseData.cheatJoin) ?? pickPair(tables);
+  const joinOn = pair?.on ?? `b.${pair?.bKey ?? "kunci"} = a.${pair?.aKey ?? "kunci"}`;
 
   const A = pair?.a ?? tables[0];
   const B = pair?.b ?? tables[1] ?? tables[0];
-  const key = pair?.key ?? "kunci";
+  const aKey = pair?.aKey ?? "kunci";
+  const bKey = pair?.bKey ?? "kunci";
 
   const t1 = A?.name ?? "nama_tabel";
   const t2 = B?.name ?? t1;
-  const aCols = (A?.cols ?? []).filter((c) => c !== key);
-  const bCols = (B?.cols ?? []).filter((c) => c !== key);
-  const c1 = aCols[0] ?? key;
+
+  // Kondisi untuk subkueri: pencocokan nilai kolom, atau EXISTS bila kondisi gabung kustom
+  const subqueryCond = pair?.on
+    ? `EXISTS (\n  SELECT 1 FROM ${t2} b\n  WHERE ${pair.on}\n)`
+    : `a.${aKey} IN (\n  SELECT ${bKey} FROM ${t2}\n)`;
+  const aCols = displayCols(A?.cols ?? [], [aKey]);
+  const bCols = displayCols(B?.cols ?? [], [bKey]);
+  const c1 = aCols[0] ?? aKey;
   const c1b = aCols[1] ?? c1;
-  const c2 = bCols[0] ?? key;
+  const c2 = bCols[0] ?? bKey;
 
   const all: CheatEntry[] = [
     {
@@ -63,12 +124,12 @@ export const buildCheatSheet = (caseData: CaseData) => {
     {
       skill: "JOIN",
       judul: "Gabungkan dua tabel",
-      kode: `SELECT a.${c1}, b.${c2}\nFROM ${t1} a\nJOIN ${t2} b ON b.${key} = a.${key};`,
+      kode: `SELECT a.${c1}, b.${c2}\nFROM ${t1} a\nJOIN ${t2} b ON ${joinOn};`,
     },
     {
       skill: "LEFT JOIN",
       judul: "Tetap tampilkan baris tanpa pasangan",
-      kode: `SELECT a.${c1}, b.${c2}\nFROM ${t1} a\nLEFT JOIN ${t2} b ON b.${key} = a.${key};`,
+      kode: `SELECT a.${c1}, b.${c2}\nFROM ${t1} a\nLEFT JOIN ${t2} b ON ${joinOn};`,
     },
     {
       skill: "IS NULL",
@@ -78,12 +139,12 @@ export const buildCheatSheet = (caseData: CaseData) => {
     {
       skill: "GROUP BY",
       judul: "Kelompokkan hasil",
-      kode: `SELECT ${key}, COUNT(*) AS jumlah\nFROM ${t1}\nGROUP BY ${key};`,
+      kode: `SELECT ${aKey}, COUNT(*) AS jumlah\nFROM ${t1}\nGROUP BY ${aKey};`,
     },
     {
       skill: "HAVING",
       judul: "Saring setelah dikelompokkan",
-      kode: `SELECT ${key}, COUNT(*) AS jumlah\nFROM ${t1}\nGROUP BY ${key}\nHAVING COUNT(*) >= 2;`,
+      kode: `SELECT ${aKey}, COUNT(*) AS jumlah\nFROM ${t1}\nGROUP BY ${aKey}\nHAVING COUNT(*) >= 2;`,
     },
     {
       skill: "COUNT",
@@ -93,12 +154,12 @@ export const buildCheatSheet = (caseData: CaseData) => {
     {
       skill: "SUM",
       judul: "Jumlahkan nilai per kelompok",
-      kode: `SELECT ${key}, SUM(${c1}) AS total\nFROM ${t1}\nGROUP BY ${key};`,
+      kode: `SELECT ${aKey}, SUM(${c1}) AS total\nFROM ${t1}\nGROUP BY ${aKey};`,
     },
     {
       skill: "COALESCE",
       judul: "Ganti nilai kosong dengan angka",
-      kode: `SELECT ${key}, COALESCE(${c1}, 0) AS nilai\nFROM ${t1};`,
+      kode: `SELECT ${aKey}, COALESCE(${c1}, 0) AS nilai\nFROM ${t1};`,
     },
     {
       skill: "LIKE",
@@ -108,7 +169,7 @@ export const buildCheatSheet = (caseData: CaseData) => {
     {
       skill: "SUBQUERY",
       judul: "Kondisi dari kueri lain",
-      kode: `SELECT *\nFROM ${t1}\nWHERE ${key} IN (\n  SELECT ${key} FROM ${t2}\n);`,
+      kode: `SELECT *\nFROM ${t1} a\nWHERE ${subqueryCond};`,
     },
     {
       skill: "BETWEEN",
@@ -118,7 +179,7 @@ export const buildCheatSheet = (caseData: CaseData) => {
     {
       skill: "EXISTS",
       judul: "Cek apakah ada pasangan",
-      kode: `SELECT a.${c1}\nFROM ${t1} a\nWHERE NOT EXISTS (\n  SELECT 1 FROM ${t2} b\n  WHERE b.${key} = a.${key}\n);`,
+      kode: `SELECT a.${c1}\nFROM ${t1} a\nWHERE NOT EXISTS (\n  SELECT 1 FROM ${t2} b\n  WHERE b.${bKey} = a.${aKey}\n);`,
     },
     {
       skill: "WITH",
@@ -128,12 +189,12 @@ export const buildCheatSheet = (caseData: CaseData) => {
     {
       skill: "CASE",
       judul: "Beri label bersyarat",
-      kode: `SELECT ${key},\n  CASE\n    WHEN ${c1} IS NULL THEN 'kosong'\n    ELSE 'ada'\n  END AS keterangan\nFROM ${t1};`,
+      kode: `SELECT ${aKey},\n  CASE\n    WHEN ${c1} IS NULL THEN 'kosong'\n    ELSE 'ada'\n  END AS keterangan\nFROM ${t1};`,
     },
     {
       skill: "UNION",
       judul: "Gabungkan hasil dua kueri",
-      kode: `SELECT ${key} FROM ${t1}\nUNION ALL\nSELECT ${key} FROM ${t2};`,
+      kode: `SELECT ${aKey} FROM ${t1}\nUNION ALL\nSELECT ${bKey} FROM ${t2};`,
     },
   ];
 

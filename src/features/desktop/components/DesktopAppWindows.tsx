@@ -23,6 +23,7 @@ interface DesktopAppWindowsProps {
   inbox: EmailItem[];
   readMail: string[];
   onReadMail: (id: string) => void;
+  onReplayTour: () => void;
 }
 
 export const DesktopAppWindows: React.FC<DesktopAppWindowsProps> = ({
@@ -35,6 +36,7 @@ export const DesktopAppWindows: React.FC<DesktopAppWindowsProps> = ({
   inbox,
   readMail,
   onReadMail,
+  onReplayTour,
 }) => (
   <main className="absolute inset-x-0 bottom-0 top-7 overflow-hidden">
     {/* SiQuery */}
@@ -121,7 +123,7 @@ export const DesktopAppWindows: React.FC<DesktopAppWindowsProps> = ({
       onMinimize={() => minimizeWindow("guide")}
       onFocus={() => focusWindow("guide")}
     >
-      <GuideApp caseData={caseData} />
+      <GuideApp caseData={caseData} onReplayTour={onReplayTour} />
     </OSWindow>
   </main>
 );

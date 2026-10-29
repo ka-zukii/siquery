@@ -17,6 +17,12 @@ export const jamJagaCase: CaseData = {
   briefing:
     "Pos satpam mencatat jam jaga setiap petugas. Temukan setiap pintu masuk yang berhasil (DITERIMA) pada saat tidak ada petugas yang sedang berjaga di tanggal yang sama. Tampilkan kartu, tanggal, jam, dan pintunya.",
 
+  cheatJoin: {
+    a: "jadwal_jaga",
+    aKey: "petugas_id",
+    b: "petugas_jaga",
+    bKey: "petugas_id",
+  },
   hints: [
     "Hanya masuk yang berstatus DITERIMA yang perlu diperiksa. Filter kolom hasil lebih dulu.",
     "Masuk dianggap terjaga bila ada jadwal di tanggal yang sama dengan jam di antara jam_mulai dan jam_selesai. Cari masuk yang tidak punya jadwal seperti itu dengan NOT EXISTS.",

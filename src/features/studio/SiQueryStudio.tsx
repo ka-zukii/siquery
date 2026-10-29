@@ -2,12 +2,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import { parseSchema } from "@/shared/utils/parseSchema";
 import { useDb, type HistoryItem } from "@/shared/context/DatabaseContext";
 import { SqlEditor } from "./SqlEditor";
+import { LessonPanel } from "./LessonPanel";
 import { describeFeedback } from "@/shared/utils/checkAnswer";
-import {
-  isTutorialDone,
-  markTutorialDone,
-  tutorialStep,
-} from "@/content/tutorial";
+import { explainSqlError } from "@/shared/utils/sqlErrors";
+import { revealedHintCount } from "@/shared/utils/hints";
 import type { CaseData, QueryResult } from "@/types/case.types";
 
 const FOCUS =
@@ -46,6 +44,7 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
     submitQuery,
     solved,
     feedback,
+    wrongCount,
     sqlDraft,
     updateDraft,
   } = useDb();
@@ -67,15 +66,6 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
   const setResult = (r: QueryResult | null) => updateDraft({ result: r });
   const setLocalError = (e: string | null) => updateDraft({ localError: e });
   const setActiveTable = (t: string | null) => updateDraft({ activeTable: t });
-
-  // Panduan awal hanya untuk chapter pertama dan hanya sekali
-  const [tutorialOpen, setTutorialOpen] = useState(
-    () => caseData.meta.number === "01" && !isTutorialDone(),
-  );
-  const dismissTutorial = () => {
-    markTutorialDone();
-    setTutorialOpen(false);
-  };
 
   useEffect(() => {
     if (!isReady) return;
@@ -119,6 +109,14 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
     }
   };
 
+  // Dipakai panel pelajaran: menjalankan kueri, mencatat riwayat, dan menampilkan hasil
+  const runFromLesson = (text: string) => {
+    setLocalError(null);
+    const res = runAndRecord(text);
+    if (res) setResult(res);
+    return res;
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
@@ -128,14 +126,14 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
 
   const activeError = localError || dbError;
 
-  const ranQuery = history.length > 0;
-  const ranOk = history.some((h) => h.ok);
-  const step = tutorialOpen ? tutorialStep({ ranQuery, ranOk, solved }) : null;
+
+  // Chapter biasa membuka petunjuk bertahap. Chapter latihan punya petunjuk sendiri di panel pelajaran.
+  const hintsShown = revealedHintCount(wrongCount, caseData.hints.length);
 
   return (
     <div className="sql-app-layout grid h-full max-h-full grid-cols-[230px_1fr] overflow-hidden font-mono">
       {/* Sidebar skema dan riwayat */}
-      <aside className="os-sidebar os-scroll max-h-full overflow-y-auto border-r border-paper/10 bg-mac-sidebar p-[12px_10px]">
+      <aside data-tour="studio-schema" className="os-sidebar os-scroll max-h-full overflow-y-auto border-r border-paper/10 bg-mac-sidebar p-[12px_10px]">
         <h3 className="os-panel-title m-[2px_6px_8px] font-sans text-[0.72rem] font-semibold text-mac-muted">
           Skema database
         </h3>
@@ -177,7 +175,7 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
         })}
 
         {/* Riwayat kueri */}
-        <div className="mt-4 border-t border-paper/10 pt-3">
+        <div data-tour="studio-history" className="mt-4 border-t border-paper/10 pt-3">
           <div className="mb-2 flex items-center justify-between px-1.5">
             <h3 className="font-sans text-[0.72rem] font-semibold text-mac-muted">
               Riwayat kueri
@@ -227,7 +225,17 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
 
       {/* Bagian utama */}
       <main className="os-main os-scroll flex h-full flex-col gap-3 overflow-y-auto bg-mac-solid p-3.5">
-        <section className="os-editor-section os-scroll flex max-h-62.5 shrink-0 flex-col gap-2 overflow-y-auto">
+        {caseData.lessons && caseData.lessons.length > 0 && (
+          <LessonPanel
+            caseId={caseData.id}
+            lessons={caseData.lessons}
+            query={query}
+            setQuery={setQuery}
+            runQuery={runFromLesson}
+          />
+        )}
+
+        <section data-tour="studio-editor" className="os-editor-section os-scroll flex max-h-62.5 shrink-0 flex-col gap-2 overflow-y-auto">
           <div className="os-toolbar flex items-center justify-between font-sans text-[0.8rem] text-mac-muted">
             <span className="font-medium text-paper/85">Konsol SQL</span>
             <div className="os-toolbar-actions flex items-center gap-2">
@@ -241,13 +249,10 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
                 Bersihkan
               </button>
               <button
+                data-tour="studio-run"
                 onClick={handleRunQuery}
                 disabled={isLoading || !isReady}
-                className={`os-btn-run cursor-pointer rounded-md border-none bg-lamp p-[5px_14px] font-sans text-[0.78rem] font-semibold text-[#1d1608] shadow-[0_1px_2px_rgba(0,0,0,0.3)] transition-colors hover:bg-[#f6c765] active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS} ${
-                  step?.highlightRun
-                    ? "ring-2 ring-lamp ring-offset-2 ring-offset-mac-solid animate-pulse"
-                    : ""
-                }`}
+                className={`os-btn-run cursor-pointer rounded-md border-none bg-lamp p-[5px_14px] font-sans text-[0.78rem] font-semibold text-[#1d1608] shadow-[0_1px_2px_rgba(0,0,0,0.3)] transition-colors hover:bg-[#f6c765] active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS}`}
               >
                 {isLoading ? "Memuat database..." : "Jalankan kueri"}
               </button>
@@ -264,28 +269,26 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
           />
         </section>
 
-        {step && (
-          <div className="flex items-start justify-between gap-3 rounded-lg border border-lamp/50 bg-lamp/12 p-[10px_12px] font-sans text-[0.8rem] text-paper">
-            <p>
-              <b>Panduan.</b> {step.text}
-            </p>
-            <button
-              type="button"
-              onClick={dismissTutorial}
-              className={`shrink-0 cursor-pointer rounded-md border border-paper/25 px-2.5 py-1 text-[0.72rem] text-paper hover:border-paper/55 ${FOCUS}`}
-            >
-              Mengerti
-            </button>
+
+        {!caseData.lessons && hintsShown > 0 && (
+          <div data-tour="studio-hints" className="os-hint-box rotate-[-0.4deg] rounded-sm bg-sticky p-[9px_12px] font-sans text-[0.78rem] leading-snug text-[#3b2f08] shadow-[0_6px_14px_rgba(0,0,0,0.35)]">
+            <b>
+              Petunjuk {hintsShown} dari {caseData.hints.length}:
+            </b>
+            <ul className="mt-1 list-disc space-y-0.5 pl-4">
+              {caseData.hints.slice(0, hintsShown).map((h, i) => (
+                <li key={i}>{h}</li>
+              ))}
+            </ul>
+            {hintsShown < caseData.hints.length && (
+              <p className="mt-1 text-[0.72rem] opacity-75">
+                Salah lagi untuk membuka petunjuk berikutnya.
+              </p>
+            )}
           </div>
         )}
 
-        {caseData.hints.length > 0 && (
-          <div className="os-hint-box rotate-[-0.4deg] rounded-sm bg-sticky p-[9px_12px] font-sans text-[0.78rem] leading-snug text-[#3b2f08] shadow-[0_6px_14px_rgba(0,0,0,0.35)]">
-            <b>Petunjuk:</b> {caseData.hints[0]}
-          </div>
-        )}
-
-        <section className="os-result-section flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
+        <section data-tour="studio-result" className="os-result-section flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
           {solved && (
             <div className="rounded-lg border border-[#28c840]/50 bg-[#28c840]/12 p-[10px_12px] font-sans text-[0.8rem] text-phosphor">
               <b>Tiket selesai.</b> Hasil kueri sesuai dengan target tugas.
@@ -300,7 +303,10 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
 
           {activeError && (
             <div className="os-error rounded-lg border border-mac-red/50 bg-mac-red/12 p-[10px_12px] font-sans text-[0.8rem] text-[#f0a08f]">
-              <b>Kueri gagal.</b> {activeError}
+              <b>Kueri gagal.</b> {explainSqlError(activeError)}
+              <span className="mt-1 block font-mono text-[0.7rem] opacity-70">
+                {activeError}
+              </span>
             </div>
           )}
 

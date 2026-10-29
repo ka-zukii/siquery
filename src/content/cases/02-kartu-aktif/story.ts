@@ -17,6 +17,12 @@ export const kartuAktifCase: CaseData = {
   briefing:
     "Petugas verifikasi menemukan beberapa kartu lama yang masih berstatus AKTIF. Tampilkan kartu AKTIF yang berhasil masuk (DITERIMA) minimal 3 kali, beserta jumlah masuknya.",
 
+  cheatJoin: {
+    a: "riwayat_pindai",
+    aKey: "card_id",
+    b: "kartu_akses",
+    bKey: "card_id",
+  },
   hints: [
     "Hitung jumlah pindai per kartu dengan COUNT(*), lalu kelompokkan dengan GROUP BY card_id.",
     "WHERE menyaring baris sebelum dikelompokkan, sedangkan HAVING menyaring grup setelah dihitung.",

@@ -10,5 +10,7 @@ export interface Chapter {
   description: string;
   skills: string[];
   isAvailable: boolean;
+  /** Status progres pemain untuk kartu katalog */
+  progress?: { done: boolean; label: string };
 }
 

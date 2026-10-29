@@ -5,6 +5,7 @@ import { Desktop } from "@/features/desktop/Desktop";
 import { useBgm } from "@/shared/audio/useBGM";
 import { DatabaseProvider } from "@/shared/context/DatabaseContext";
 import { CASES, getCaseById } from "@/content/cases";
+import { isCaseSolved } from "@/content/progress";
 
 type Phase = "menu" | "desk" | "pc";
 
@@ -66,6 +67,7 @@ export const GameFlow: React.FC = () => {
           key={caseData.id}
           schemaSql={caseData.schemaSql}
           answerSql={caseData.answerSql}
+          initialSolved={isCaseSolved(caseData.id)}
         >
           <DeskScene
             caseData={caseData}
