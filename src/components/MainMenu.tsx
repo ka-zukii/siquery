@@ -56,6 +56,11 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onStartCase }) => {
   ].sort((a, b) => a.number.localeCompare(b.number));
 
   const total = chapters.length;
+  const WINDOW_SIZE = 5;
+  const windowStart = Math.max(
+    0,
+    Math.min(currentChapterIndex - 2, total - WINDOW_SIZE),
+  );
   const currentChapter = chapters[currentChapterIndex];
 
   const goPrev = () => setCurrentChapterIndex((i) => (i - 1 + total) % total);
@@ -197,43 +202,75 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onStartCase }) => {
                   tombol panah atau tombol kiri dan kanan di keyboard.
                 </p>
 
-                <div className="mt-8 flex items-center gap-3">
-                  <button
-                    onClick={goPrev}
-                    aria-label="Kasus sebelumnya"
-                    className={`flex h-11 w-11 items-center justify-center rounded-full border border-paper/25 text-lg transition hover:border-lamp hover:text-lamp ${FOCUS}`}
-                  >
-                    ‹
-                  </button>
-                  <div
-                    className="flex items-center gap-1.5"
-                    role="tablist"
-                    aria-label="Daftar kasus"
-                  >
-                    {chapters.map((c, idx) => (
-                      <button
-                        key={c.id}
-                        role="tab"
-                        aria-selected={idx === currentChapterIndex}
-                        aria-label={`Kasus ${c.number}`}
-                        onClick={() => setCurrentChapterIndex(idx)}
-                        className={`sq-mono h-9 min-w-9 rounded-md px-2.5 text-[13px] transition ${FOCUS} ${
-                          idx === currentChapterIndex
-                            ? "bg-paper font-medium text-ink"
-                            : "border border-paper/25 text-paper/70 hover:border-paper/60"
+                <div className="mt-8">
+                  <p className="sq-mono mb-3 text-[13px] text-paper/60">
+                    Kasus {currentChapter.number} dari {total}
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={goPrev}
+                      aria-label="Kasus sebelumnya"
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-paper/25 text-lg transition hover:border-lamp hover:text-lamp ${FOCUS}`}
+                    >
+                      ‹
+                    </button>
+
+                    <div
+                      className="flex w-68 shrink-0 items-center justify-center gap-1.5"
+                      role="tablist"
+                      aria-label="Daftar kasus"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={`sq-mono w-4 text-center text-paper/40 ${
+                          windowStart > 0 ? "" : "invisible"
                         }`}
                       >
-                        {c.number}
-                      </button>
-                    ))}
+                        …
+                      </span>
+
+                      {chapters
+                        .slice(windowStart, windowStart + WINDOW_SIZE)
+                        .map((c, i) => {
+                          const idx = windowStart + i;
+                          const active = idx === currentChapterIndex;
+                          return (
+                            <button
+                              key={c.id}
+                              role="tab"
+                              aria-selected={active}
+                              aria-label={`Kasus ${c.number}: ${c.title}`}
+                              title={`${c.number} · ${c.title}`}
+                              onClick={() => setCurrentChapterIndex(idx)}
+                              className={`sq-mono flex h-9 w-10 shrink-0 items-center justify-center rounded-md text-[13px] transition ${FOCUS} ${
+                                active
+                                  ? "bg-paper font-medium text-ink"
+                                  : "border border-paper/25 text-paper/70 hover:border-paper/60"
+                              }`}
+                            >
+                              {c.number}
+                            </button>
+                          );
+                        })}
+
+                      <span
+                        aria-hidden="true"
+                        className={`sq-mono w-4 text-center text-paper/40 ${
+                          windowStart + WINDOW_SIZE < total ? "" : "invisible"
+                        }`}
+                      >
+                        …
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={goNext}
+                      aria-label="Kasus berikutnya"
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-paper/25 text-lg transition hover:border-lamp hover:text-lamp ${FOCUS}`}
+                    >
+                      ›
+                    </button>
                   </div>
-                  <button
-                    onClick={goNext}
-                    aria-label="Kasus berikutnya"
-                    className={`flex h-11 w-11 items-center justify-center rounded-full border border-paper/25 text-lg transition hover:border-lamp hover:text-lamp ${FOCUS}`}
-                  >
-                    ›
-                  </button>
                 </div>
 
                 <div className="mt-8 flex max-w-sm gap-3">

@@ -9,6 +9,7 @@ import {
   faFileSignature,
   faNoteSticky,
   faWifi,
+  faMusic,
   type IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
 
@@ -54,6 +55,13 @@ export const DOCK_APPS: DockApp[] = [
     icon: faFileSignature,
     glyphColor: "#ffffff",
     tile: "linear-gradient(160deg,#e07a5f 0%,#9c3b24 100%)",
+  },
+  {
+    id: "music",
+    label: "Musik",
+    icon: faMusic,
+    glyphColor: "#ffffff",
+    tile: "linear-gradient(160deg,#ff6b8b 0%,#d7265a 100%)",
   },
 ];
 

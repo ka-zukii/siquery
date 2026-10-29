@@ -22,6 +22,7 @@ import { easeInOutCubic } from "./desk-scene/desk-scene.helpers";
 import { DocViewer } from "./DocViewer";
 import { useDb } from "../context/DatabaseContext";
 import { SolvedNotice } from "./SolvedNotice";
+import { stopMusic } from "./desktop/music/player";
 
 export const DeskScene: React.FC<DeskSceneProps> = ({
   caseData,
@@ -35,6 +36,10 @@ export const DeskScene: React.FC<DeskSceneProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [hoverLabel, setHoverLabel] = useState<string | null>(null);
   const [doc, setDoc] = useState<DocContent | null>(null);
+
+  // Musik berhenti hanya saat keluar dari kasus (kembali ke menu)
+  useEffect(() => () => stopMusic(), []);
+
   const { solved } = useDb();
   const solvedRef = useRef(solved);
   solvedRef.current = solved;

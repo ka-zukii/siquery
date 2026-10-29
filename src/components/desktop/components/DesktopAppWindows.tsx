@@ -8,6 +8,7 @@ import { NotepadApp } from "./Notepad";
 import { ReportApp } from "./ReportApp";
 import { UniMailApp } from "./UniMailApp";
 import type { EmailItem } from "../../../types/case.types";
+import { MusicApp } from "./MusicApp";
 
 type WindowsState = ReturnType<typeof useWindowManager>["windows"];
 
@@ -93,6 +94,20 @@ export const DesktopAppWindows: React.FC<DesktopAppWindowsProps> = ({
       onFocus={() => focusWindow("report")}
     >
       <ReportApp report={caseData.report} caseTitle={caseData.title} />
+    </OSWindow>
+
+    {/* Musik */}
+    <OSWindow
+      windowState={windows["music"]}
+      isActive={activeId === "music"}
+      bottomInset={DOCK_CLEARANCE}
+      defaultPosition={{ x: 200, y: 90 }}
+      defaultSize={{ width: "640px", height: "420px" }}
+      onClose={() => onClose("music")}
+      onMinimize={() => minimizeWindow("music")}
+      onFocus={() => focusWindow("music")}
+    >
+      <MusicApp />
     </OSWindow>
   </main>
 );

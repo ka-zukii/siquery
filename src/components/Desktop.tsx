@@ -48,6 +48,7 @@ export const Desktop: React.FC<DesktopProps> = ({ caseData, onExit }) => {
       { id: "unimail", title: "UniMail - Kotak Masuk" },
       { id: "notepad", title: "Catatan Investigasi" },
       { id: "report", title: "Laporkan Kasus" },
+      { id: "music", title: "Musik" },
     ]);
 
   // Jam di menubar berjalan
@@ -55,6 +56,7 @@ export const Desktop: React.FC<DesktopProps> = ({ caseData, onExit }) => {
     const t = setInterval(() => setNow(new Date()), 15_000);
     return () => clearInterval(t);
   }, []);
+
 
   // Esc: tutup menu apel dulu; kalau tidak ada menu terbuka, berdiri dari
   // komputer dan kembali ke meja 3D.

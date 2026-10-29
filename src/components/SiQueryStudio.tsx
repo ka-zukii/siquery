@@ -1,34 +1,92 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { parseSchema } from "../utils/parseSchema";
-import { useDb } from "../context/DatabaseContext";
+import { useDb, type HistoryItem } from "../context/DatabaseContext";
 import { SqlEditor } from "./SqlEditor";
 import type { CaseData, QueryResult } from "../types/case.types";
 
 const FOCUS =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lamp";
 
+const HISTORY_LIMIT = 20;
+
+type SchemaTable = ReturnType<typeof parseSchema>[number];
+
+/** Membaca semua tabel yang ada di database saat ini, termasuk yang dibuat pemain */
+const readLiveSchema = (
+  run: (q: string) => QueryResult | null,
+): SchemaTable[] => {
+  const tables = run(
+    "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
+  );
+  if (!tables) return [];
+  return tables.values.map((row) => {
+    const name = String(row[0]);
+    const info = run(`PRAGMA table_info(${name})`);
+    return {
+      name,
+      cols: info ? info.values.map((r) => String(r[1])) : [],
+    } as SchemaTable;
+  });
+};
+
 export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
   caseData,
 }) => {
-  // Ambil state dan fungsi query langsung dari context sistem
-  const { isReady, isLoading, error: dbError, submitQuery, solved } = useDb();
+  const {
+    isReady,
+    isLoading,
+    error: dbError,
+    executeQuery,
+    submitQuery,
+    solved,
+    sqlDraft,
+    updateDraft,
+  } = useDb();
 
-  // Sidebar mengikuti skema chapter yang sedang dimainkan
-  const schema = useMemo(
-    () => parseSchema(caseData.schemaSql),
+  // Nama tabel bawaan chapter, untuk membedakan tabel yang dibuat pemain
+  const baseNames = useMemo(
+    () => new Set(parseSchema(caseData.schemaSql).map((t) => t.name)),
     [caseData.schemaSql],
   );
 
-  const [query, setQuery] = useState(
-    "SELECT * FROM access_logs WHERE status = 'GRANTED';",
+  // Skema dibaca dari database yang hidup, diperbarui setiap kali ada kueri baru
+  const [liveSchema, setLiveSchema] = useState<SchemaTable[]>(() =>
+    parseSchema(caseData.schemaSql),
   );
-  const [result, setResult] = useState<QueryResult | null>(null);
-  const [localError, setLocalError] = useState<string | null>(null);
-  const [activeTable, setActiveTable] = useState<string | null>(null);
+
+  // State editor dipegang context, jadi tetap ada saat keluar dari komputer
+  const { query, result, localError, activeTable, history } = sqlDraft;
+  const setQuery = (q: string) => updateDraft({ query: q });
+  const setResult = (r: QueryResult | null) => updateDraft({ result: r });
+  const setLocalError = (e: string | null) => updateDraft({ localError: e });
+  const setActiveTable = (t: string | null) => updateDraft({ activeTable: t });
+
+  useEffect(() => {
+    if (!isReady) return;
+    setLiveSchema(readLiveSchema(executeQuery));
+  }, [isReady, history[0]?.id, executeQuery]);
+
+  // Menjalankan kueri sekaligus mencatatnya ke riwayat
+  const runAndRecord = (text: string) => {
+    const res = submitQuery(text);
+    const ok = Boolean(res) && !res?.error;
+    const entry: HistoryItem = {
+      id: Date.now(),
+      query: text,
+      ok,
+      rows: res?.values.length ?? 0,
+      at: new Date().toLocaleTimeString("id-ID", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    };
+    updateDraft({ history: [entry, ...history].slice(0, HISTORY_LIMIT) });
+    return res;
+  };
 
   const handleRunQuery = () => {
     setLocalError(null);
-    const res = submitQuery(query);
+    const res = runAndRecord(query);
     if (res) {
       setResult(res);
     }
@@ -39,7 +97,7 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
     setQuery(defaultQuery);
     setActiveTable(tableName);
     setLocalError(null);
-    const res = submitQuery(defaultQuery);
+    const res = runAndRecord(defaultQuery);
     if (res) {
       setResult(res);
     }
@@ -56,13 +114,13 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
 
   return (
     <div className="sql-app-layout grid h-full max-h-full grid-cols-[230px_1fr] overflow-hidden font-mono">
-      {/* Sidebar skema */}
+      {/* Sidebar skema dan riwayat */}
       <aside className="os-sidebar no-scrollbar max-h-full overflow-y-auto border-r border-paper/10 bg-mac-sidebar p-[12px_10px]">
         <h3 className="os-panel-title m-[2px_6px_8px] font-sans text-[0.72rem] font-semibold text-mac-muted">
           Skema database
         </h3>
 
-        {schema.map((tb) => {
+        {liveSchema.map((tb) => {
           const isActive = activeTable === tb.name;
           return (
             <div
@@ -83,6 +141,11 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
                   aria-hidden="true"
                 />
                 {tb.name}
+                {!baseNames.has(tb.name) && (
+                  <span className="ml-auto rounded bg-lamp/20 px-1.5 font-sans text-[0.6rem] font-semibold text-lamp">
+                    baru
+                  </span>
+                )}
               </button>
               <ul className="os-col-list mt-1 ml-3.5 space-y-0.5 border-l border-paper/10 pl-3 text-[0.7rem] text-mac-muted">
                 {tb.cols.map((col) => (
@@ -92,6 +155,54 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
             </div>
           );
         })}
+
+        {/* Riwayat kueri */}
+        <div className="mt-4 border-t border-paper/10 pt-3">
+          <div className="mb-2 flex items-center justify-between px-1.5">
+            <h3 className="font-sans text-[0.72rem] font-semibold text-mac-muted">
+              Riwayat kueri
+            </h3>
+            {history.length > 0 && (
+              <button
+                type="button"
+                onClick={() => updateDraft({ history: [] })}
+                className={`cursor-pointer rounded font-sans text-[0.68rem] text-mac-muted hover:text-paper ${FOCUS}`}
+              >
+                Hapus
+              </button>
+            )}
+          </div>
+
+          {history.length === 0 ? (
+            <p className="px-1.5 font-sans text-[0.72rem] text-mac-muted">
+              Belum ada kueri yang dijalankan.
+            </p>
+          ) : (
+            <ul className="space-y-1.5">
+              {history.map((h) => (
+                <li key={h.id}>
+                  <button
+                    type="button"
+                    onClick={() => setQuery(h.query)}
+                    title={h.query}
+                    className={`w-full cursor-pointer rounded-md p-[6px_8px] text-left transition-colors hover:bg-paper/8 ${FOCUS}`}
+                  >
+                    <span className="block truncate text-[0.72rem] text-paper/90">
+                      {h.query}
+                    </span>
+                    <span
+                      className={`mt-0.5 block font-sans text-[0.66rem] ${
+                        h.ok ? "text-phosphor/80" : "text-[#f0a08f]"
+                      }`}
+                    >
+                      {h.at} · {h.ok ? `${h.rows} baris` : "gagal"}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </aside>
 
       {/* Bagian utama */}
@@ -124,7 +235,7 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
             value={query}
             onChange={setQuery}
             onKeyDown={handleKeyDown}
-            schema={schema}
+            schema={liveSchema}
             placeholder="Ketik kueri SQL di sini..."
           />
         </section>

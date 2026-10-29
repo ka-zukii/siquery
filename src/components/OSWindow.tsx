@@ -185,7 +185,7 @@ export const OSWindow: React.FC<OSWindowProps> = ({
     : "bg-paper/25 group-hover:bg-[#28c840]";
 
   const lightBase =
-    "win-btn flex h-3.25 w-3.25 cursor-pointer items-center justify-center rounded-full border border-black/30 text-[0px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lamp group-hover:after:font-extrabold group-hover:after:text-black/70";
+    "win-btn relative flex h-4 w-4 cursor-pointer items-center justify-center rounded-full border border-black/30 text-[0px] before:absolute before:-inset-2 before:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lamp group-hover:after:font-extrabold group-hover:after:text-black/70";
 
   return (
     <div
