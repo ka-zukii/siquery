@@ -9,123 +9,167 @@
 
 > **Fokus ke layar. Periksa berkas di meja. Ketik kueri SQL untuk menyelesaikan tugas pustakawan.**
 
-**SiQuery: Campus Librarian** adalah game teka-teki logika dan manajemen *database* berbasis *browser*, terinspirasi dari permainan bergaya _Database Detective_. Dalam game ini, pemain berperan sebagai petugas administrasi perpustakaan kampus. 
+**SiQuery: Campus Librarian** adalah game teka-teki logika dan manajemen *database* berbasis *browser*. Pemain berperan sebagai petugas administrasi perpustakaan kampus. Seluruh permainan berlangsung dari sudut pandang orang pertama: pemain duduk di meja kerja (dirender dengan **Three.js**), memeriksa berkas dan barang bukti, lalu mengetik kueri SQL di layar komputer (dibangun dengan **React** dan **Tailwind CSS**) untuk menyelesaikan kasus sirkulasi, keanggotaan, dan kehilangan di perpustakaan.
 
-Tidak ada eksplorasi berjalan keliling ruangan; seluruh permainan berlangsung dari sudut pandang orang pertama di meja kerja Anda. Lingkungan meja (komputer, tumpukan formulir pendaftaran, kartu anggota mahasiswa, dan catatan tempel) di-*render* secara 3D interaktif menggunakan **Three.js**. Sementara itu, layar monitor komputer yang memuat terminal sistem manajemen perpustakaan dibangun menggunakan **React** dan **Tailwind CSS**. Pemain harus membaca petunjuk dari berkas di meja, lalu mengeksekusi kueri SQL yang tepat di komputer untuk menyelesaikan berbagai permasalahan sirkulasi dan keanggotaan.
-
----
-
-## ✨ Fitur Utama
-
-- **🖥️ Terminal Database Interaktif:** Layar utama permainan adalah sistem komputer perpustakaan. Ketik dan jalankan kueri SQL secara langsung untuk mencari data buku, memproses peminjaman, atau mendaftarkan anggota.
-- **🗂️ Eksplorasi Meja Kerja 3D (Point-and-Click):** Gunakan _mouse_ untuk menginspeksi objek 3D di atas meja kerja Anda. Klik pada formulir kertas untuk membacanya, atau periksa catatan tempel (*sticky notes*) yang berisi petunjuk *password* atau instruksi dari pustakawan shift sebelumnya.
-- **🧩 Teka-teki Berbasis Kueri (SQL Puzzles):** Pecahkan masalah harian. Contoh: _"Ada mahasiswa yang lupa judul buku yang dipinjam, tapi ingat nama depan penulis dan tahun terbitnya."_ Anda harus merangkai kueri yang tepat untuk menemukan ID buku tersebut.
-- **📅 Manajemen Tugas Harian:** Selesaikan tumpukan _tiket_ tugas (pendaftaran massal mahasiswa baru, pelacakan buku hilang, perhitungan denda keterlambatan) yang terus diperbarui setiap harinya.
+🎮 **Demo:** [siquery.vercel.app](https://siquery.vercel.app)
 
 ---
 
-## 🎮 Mekanisme Permainan
+## ✨ Fitur
 
-1. **Menerima Tugas (Ticketing):** Di awal _shift_, Anda akan melihat tumpukan dokumen fisik di meja 3D atau notifikasi email masuk di layar komputer.
-2. **Inspeksi Bukti Fisik:** Klik dan baca dokumen pendukung di atas meja (seperti KTM mahasiswa, struk pengembalian, atau daftar buku donasi).
-3. **Analisis & Kueri:** Beralih ke layar monitor (UI React). Tulis kueri SQL (SELECT, INSERT, UPDATE, JOIN) pada terminal berdasarkan petunjuk dari dokumen fisik.
-4. **Validasi & Eksekusi:** Sistem akan memvalidasi *output* data dari kueri Anda. Jika data yang dikembalikan sesuai dengan target tugas, masalah dianggap selesai dan tiket ditutup.
-5. **Progresi:** Seiring berjalannya hari, struktur *database* yang harus dikelola akan semakin kompleks (melibatkan banyak relasi tabel).
+- **🖥️ Desktop & DB Studio:** Layar komputer berisi aplikasi yang bisa dibuka dan ditutup, lengkap dengan animasi bergaya macOS. Terminal SQL (`DB Studio`) mendukung *syntax highlighting* dan autokapital untuk kata kunci SQL.
+- **🗂️ Eksplorasi Meja 3D:** Klik objek di meja (berkas, KTM, catatan tempel, struk) untuk membacanya.
+- **✉️ Aplikasi Pendukung:** `UniMail` untuk email masuk, `Catatan` untuk catatan tempel, `Laporkan` untuk mengirim formulir laporan akhir kasus, dan `Music` untuk musik latar.
+- **🧩 Teka-teki SQL:** Setiap chapter punya skema dan data sendiri. Pemain harus menemukan kueri yang tepat untuk menjawab kasus.
+- **📅 Progresi Chapter:** Kasus makin sulit, dari `SELECT` dasar sampai `JOIN`, `SUBQUERY`, dan `GROUP BY`.
 
 ---
 
-## 🛠️ Spesifikasi & Tech Stack
+## 🎮 Cara Bermain
+
+1. **Pilih chapter** di menu utama lalu tekan **Mulai investigasi**.
+2. **Baca briefing** dan periksa objek di meja kerja 3D.
+3. **Klik monitor** untuk masuk ke layar komputer.
+4. **Tulis kueri SQL** di DB Studio. Hasilnya langsung tampil dalam bentuk tabel.
+5. **Selesaikan kasus**: untuk chapter berbasis kueri, hasil kueri harus cocok dengan jawaban target. Untuk chapter investigasi, isi formulir di aplikasi `Laporkan`.
+6. **Tekan `Esc`** atau pilih *Kembali ke meja* untuk keluar dari layar komputer.
+
+Status chapter saat ini:
+
+| No | Chapter | Level | Konsep SQL |
+| :-- | :--- | :-- | :--- |
+| 01 | Pendaftaran Anggota Baru | Dasar | SELECT, WHERE, AND, ORDER BY |
+| 02 | Kartu Aktif | Dasar-menengah | COUNT, GROUP BY, HAVING |
+| 03 | Jejak Peminjaman | Menengah | JOIN, LEFT JOIN, IS NULL |
+| 04 | Jam Jaga | Menengah | BETWEEN, SUBQUERY, EXISTS |
+| 05 | Denah Tersembunyi | Sulit | WITH, CASE, UNION |
+| 06 | The Missing Manuscript | Sangat sulit | JOIN, SUBQUERY, GROUP BY |
+| 07 | Rak yang Berpindah | Menengah | GROUP BY, HAVING, COUNT *(segera hadir)* |
+| 08 | Denda yang Tak Pernah Dibayar | Menengah | LEFT JOIN, SUM, COALESCE *(segera hadir)* |
+| 09 | Surat Tanpa Nama | Sulit | LIKE, ORDER BY *(segera hadir)* |
+| 10 | Malam Terakhir | Sangat sulit | JOIN, SUBQUERY, GROUP BY *(segera hadir)* |
+
+> Daftar di atas diambil dari `meta` masing-masing chapter. Chapter 07 sampai 10 belum punya data cerita dan hanya tampil sebagai placeholder di `UPCOMING_CHAPTERS`.
+
+---
+
+## 🛠️ Tech Stack
 
 | Teknologi | Peran dalam Proyek |
 | :--- | :--- |
-| **Three.js** | Me-*render* ruang lingkup meja kerja secara 3D (monitor, *keyboard*, kertas berkas, alat tulis) dan menangani interaksi klik (Raycaster). |
-| **React** | Membangun UI yang ada **di dalam** layar monitor komputer (terminal SQL, *inbox* tugas, tabel hasil kueri). |
-| **Tailwind CSS** | Melakukan *styling* secara cepat untuk UI sistem perpustakaan agar terlihat seperti OS retro atau dasbor admin modern. |
-| **TypeScript** | Menjaga keamanan tipe data (*static typing*) pada logika *gameplay*, interaksi 3D, dan pemrosesan kueri. |
-| **Local SQL (e.g., sql.js / alasql)** | Menjalankan *engine* SQL di sisi *client* (*browser*) untuk mengeksekusi dan memvalidasi kueri pemain terhadap *database* perpustakaan *dummy*. |
-| **Vite** | *Build tool* dan *development server* super cepat untuk ekosistem React. |
+| **Three.js** (`three`) | Merender meja kerja 3D, monitor, dan dokumen. Interaksi klik memakai Raycaster. |
+| **React 19** | Membangun seluruh UI di dalam layar komputer: desktop, jendela aplikasi, terminal SQL, dan menu utama. |
+| **Tailwind CSS v4** | *Styling* UI, dikonfigurasi lewat `@tailwindcss/postcss` dan `postcss.config.js`. |
+| **TypeScript** | Tipe data untuk cerita kasus, hasil kueri, dan logika game. |
+| **sql.js** | Menjalankan SQLite di *browser* (WebAssembly) untuk mengeksekusi kueri pemain. |
+| **Font Awesome** | Ikon untuk dock dan aplikasi desktop. |
+| **Vite 8** | *Build tool* dan *development server*. |
+| **oxlint** | Linter. |
+
+Dokumentasi teknis tambahan:
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): alur game, struktur folder, dan cara data mengalir antar komponen.
+- [`docs/MENAMBAH_CHAPTER.md`](docs/MENAMBAH_CHAPTER.md): panduan membuat chapter baru.
 
 ---
 
-## 📂 Struktur Direktori
+## 📂 Struktur Proyek
 
 ```text
 siquery/
 ├── public/
-│   └── assets/              # Model 3D (meja, komputer, berkas, kertas), tekstur, suara
+│   ├── audio/               # Musik latar (bgm/) dan efek suara (effect/)
+│   ├── models/              # Model 3D .glb: library, meja, macbook, rak, folder dokumen
+│   └── sql-wasm.wasm        # Binary sql.js
 ├── src/
-│   ├── components/          # Komponen UI React (SQL Terminal, Data Table, Task Inbox)
-│   ├── engine/              # Logika Three.js (Setup Scene Meja, Raycaster/Click Handler)
-│   ├── database/            # Setup sql.js/alasql, skema relasional, dan dataset awal
-│   ├── puzzles/             # Logika teka-teki, misi harian, dan sistem validasi jawaban
-│   ├── App.tsx              # Manajemen state global (transisi 3D ke UI 2D layar)
-│   ├── index.css            # Entry point Tailwind CSS
-│   └── main.tsx             # Entry point aplikasi Vite
-├── index.html               # Halaman utama
-├── tailwind.config.js       # Konfigurasi Tailwind CSS
-├── vite.config.ts           # Konfigurasi Vite
-└── README.md                # Dokumentasi proyek
+│   ├── cases/               # Data chapter, satu folder per chapter (story.ts)
+│   ├── components/          # Komponen UI utama (MainMenu, Gameflow, Deskscene, Desktop, ...)
+│   │   ├── desk-scene/      # Pembangun meja 3D dan konfigurasinya
+│   │   ├── desktop/         # Aplikasi di dalam desktop (UniMail, Notepad, Report, Music, dock)
+│   │   └── main-menu/       # Kartu chapter, panel audio, data contoh kueri
+│   ├── context/             # DatabaseContext, NotepadContext
+│   ├── engine/              # DatabaseEngine: wrapper sql.js (init, runQuery, reset)
+│   ├── hooks/               # useDatabase, useWindowManager, useBGM, useSound, audioSettings
+│   ├── types/               # Tipe CaseData, QueryResult, CaseReport, dan lainnya
+│   ├── utils/               # parseSchema, checkAnswer, sqlHighlight, inbox, macAnimations
+│   ├── App.tsx
+│   ├── main.tsx             # Entry point Vite
+│   └── index.css            # Tailwind dan gaya global
+├── index.html
+├── vite.config.ts
+├── postcss.config.js
+├── .oxlintrc.json
+├── tsconfig*.json
+└── package.json
 ```
 
 ---
 
-## 🚀 Cara Instalasi & Menjalankan Game
-
-Proyek ini dibangun menggunakan Vite + React. Ikuti langkah berikut untuk menjalankan _development server_.
+## 🚀 Instalasi & Menjalankan
 
 ### Prasyarat
 
-- Web Browser modern yang mendukung WebGL.
-- [Node.js](https://nodejs.org/) (versi 16+ direkomendasikan).
+- Browser modern dengan dukungan WebGL.
+- [Node.js](https://nodejs.org/) versi yang didukung Vite 8 (disarankan 20.19+ atau 22.12+).
+- npm (ikut terpasang bersama Node.js).
 
-### Langkah-langkah
+### Langkah
 
-1. **Clone repositori ini:**
+```bash
+# 1. Clone repositori
+git clone https://github.com/ka-zukii/siquery.git
+cd siquery
 
-   ```bash
-   git clone https://github.com/username-anda/siquery.git
-   cd siquery
-   ```
+# 2. Pasang dependensi
+npm install
 
-2. **Instalasi dependensi:**
+# 3. Jalankan development server
+npm run dev
+```
 
-   ```bash
-   npm install
-   ```
+Buka `http://localhost:5173` di browser.
 
-3. **Jalankan Development Server:**
+### Script lain
 
-   ```bash
-   npm run dev
-   ```
-   Buka URL yang muncul di terminal (biasanya `http://localhost:5173`) di _browser_ Anda.
+| Perintah | Fungsi |
+| :--- | :--- |
+| `npm run dev` | Development server dengan HMR |
+| `npm run build` | Cek tipe (`tsc -b`) lalu build produksi ke `dist/` |
+| `npm run preview` | Menjalankan hasil build secara lokal |
+| `npm run lint` | Menjalankan oxlint |
 
 ---
 
-## 🎯 Target Pencapaian (Roadmap)
+## 🤝 Berkontribusi
 
-- [x] Perancangan konsep *Database Detective* bergaya pustakawan & penentuan Tech Stack (React + Tailwind + Three.js).
-- [ ] **Milestone 1: Meja Kerja 3D & Sistem Inspeksi**
-  - Pembuatan dan pemuatan model 3D meja kerja, monitor, dan dokumen fisik.
-  - Implementasi mekanik klik untuk membaca dokumen (KTM, formulir kertas).
-- [ ] **Milestone 2: Mesin Database & UI Komputer**
-  - Implementasi *local SQL engine* (menggunakan sql.js atau alasql).
-  - Pembuatan UI terminal komputer (UI React) untuk mengetik SQL dan menampilkan hasil dalam bentuk tabel.
-- [ ] **Milestone 3: Skenario Kasus & Validasi**
-  - Pembuatan dataset *dummy* (Tabel: `students`, `books`, `loans`, `authors`).
-  - Merancang sistem tiket/misi harian dari level dasar (SELECT) hingga kompleks (JOIN, UPDATE).
-- [ ] _Playtesting_ dan perilisan versi `v1.0.0`.
+Ingin menambah chapter atau memperbaiki sesuatu? Baca [`docs/MENAMBAH_CHAPTER.md`](docs/MENAMBAH_CHAPTER.md) dan [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) terlebih dahulu. Sebelum mengirim perubahan, jalankan `npm run build` dan `npm run lint`.
+
+---
+
+## 🎯 Roadmap
+
+- [x] Konsep *Database Detective* bergaya pustakawan dan pemilihan tech stack.
+- [x] Meja kerja 3D dengan interaksi klik pada berkas dan barang bukti.
+- [x] Mesin SQL di browser dan terminal DB Studio.
+- [x] Sistem chapter dengan validasi jawaban dan formulir laporan.
+- [x] Desktop bergaya macOS dengan jendela dan dock.
+- [ ] Chapter 07 sampai 10.
+- [ ] Playtesting dan rilis `v1.0.0`.
 
 ---
 
 ## 👥 Tim Pengembang
 
-Proyek ini dikembangkan oleh tim dari **Enuma Technology**:
+Dikembangkan oleh tim **Enuma Technology**:
 
-- **Rizky Andika Sukma** - _Lead Developer & Database Logic Architect_
-- **Anang Setiaji** - _3D Environment Designer & UI Developer_
+- **Rizky Andika Sukma**: *Lead Developer & Database Logic Architect*
+- **Anang Setiaji**: *3D Environment Designer & UI Developer*
 
 ---
+
+## 📄 Lisensi
+
+Belum ditentukan. Tambahkan file `LICENSE` sebelum repositori dibuka untuk umum.
 
 <p align="center">
   Dibuat dengan ☕ dan kueri SQL oleh <b>Enuma Technology</b> (2026)
