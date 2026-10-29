@@ -21,13 +21,13 @@ function box3Of(group: THREE.Group): THREE.Box3 {
   return box;
 }
 
-const hoverWithSfx = (group: THREE.Object3D, handlers: Handlers) => {
-  const visual = makeHover(group);
-  return (on: boolean) => {
-    if (on) handlers.playSound("hover");
-    visual(on);
-  };
-};
+// const hoverWithSfx = (group: THREE.Object3D, handlers: Handlers) => {
+//   const visual = makeHover(group);
+//   return (on: boolean) => {
+//     if (on) handlers.playSound("hover");
+//     visual(on);
+//   };
+// };
 
 function findBodyMesh(group: THREE.Object3D): THREE.Mesh | null {
   let best: THREE.Mesh | null = null;
