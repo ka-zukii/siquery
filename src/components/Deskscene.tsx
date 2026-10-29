@@ -23,6 +23,7 @@ import { DocViewer } from "./DocViewer";
 import { useDb } from "../context/DatabaseContext";
 import { SolvedNotice } from "./SolvedNotice";
 import { stopMusic } from "./desktop/music/player";
+import { useSound } from "../hooks/useSound";
 
 export const DeskScene: React.FC<DeskSceneProps> = ({
   caseData,
@@ -36,6 +37,8 @@ export const DeskScene: React.FC<DeskSceneProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [hoverLabel, setHoverLabel] = useState<string | null>(null);
   const [doc, setDoc] = useState<DocContent | null>(null);
+
+  const {playSound} = useSound();
 
   // Musik berhenti hanya saat keluar dari kasus (kembali ke menu)
   useEffect(() => () => stopMusic(), []);
@@ -294,6 +297,7 @@ export const DeskScene: React.FC<DeskSceneProps> = ({
         openDoc: (d: DocContent) => setDoc(d),
         enterPC: enterMonitor,
         isSolved: () => solvedRef.current,
+        playSound,
       });
       macbookPosRef.current = macPos;
       scene.add(root);

@@ -1,39 +1,15 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type { CaseData } from "../../types/case.types";
-import {
-  DESK,
-  FLOOR_Y,
-  HOME_POS,
-  LIGHT,
-  MACBOOK_MODEL_URL,
-  MON,
-  TOP_Y,
-} from "./desk-scene.config";
+import { DESK, FLOOR_Y, HOME_POS, LIGHT, MACBOOK_MODEL_URL, MON, TOP_Y } from "./desk-scene.config";
 import type { Handlers, Interactable, DocPage } from "./types/desk-scene.types";
-import {
-  box,
-  clip,
-  DISPLAY,
-  makeCanvasTexture,
-  makeHover,
-  MONO,
-  SANS,
-  std,
-  texturedPlane,
-  wrapText,
-} from "./desk-scene.helpers";
+import { box, clip, DISPLAY, makeCanvasTexture, makeHover, MONO, SANS, std, texturedPlane, wrapText } from "./desk-scene.helpers";
 
 const loader = new GLTFLoader();
 
 function loadGLB(url: string): Promise<THREE.Group> {
   return new Promise((resolve, reject) => {
-    loader.load(
-      url,
-      (gltf) => resolve(gltf.scene as THREE.Group),
-      undefined,
-      reject,
-    );
+    loader.load(url, (gltf) => resolve(gltf.scene as THREE.Group), undefined, reject);
   });
 }
 
@@ -44,6 +20,14 @@ function box3Of(group: THREE.Group): THREE.Box3 {
   });
   return box;
 }
+
+const hoverWithSfx = (group: THREE.Object3D, handlers: Handlers) => {
+  const visual = makeHover(group);
+  return (on: boolean) => {
+    if (on) handlers.playSound("hover");
+    visual(on);
+  };
+};
 
 function findBodyMesh(group: THREE.Object3D): THREE.Mesh | null {
   let best: THREE.Mesh | null = null;
@@ -72,11 +56,7 @@ export const buildDesk = async (caseData: CaseData, handlers: Handlers) => {
   root.add(tabletop);
   [-1, 1].forEach((side) => {
     const leg = box(0.16, DESK.h - 0.16, DESK.d - 0.1, wood);
-    leg.position.set(
-      DESK.x + side * (DESK.w / 2 - 0.1),
-      FLOOR_Y + (DESK.h - 0.16) / 2,
-      DESK.z,
-    );
+    leg.position.set(DESK.x + side * (DESK.w / 2 - 0.1), FLOOR_Y + (DESK.h - 0.16) / 2, DESK.z);
     root.add(leg);
   });
   const back = box(DESK.w - 0.4, 0.9, 0.08, wood);
@@ -103,11 +83,7 @@ export const buildDesk = async (caseData: CaseData, handlers: Handlers) => {
   const macBBWorld = box3Of(macbook);
   const macCenter = new THREE.Vector3();
   macBBWorld.getCenter(macCenter);
-  macbook.position.set(
-    DESK.x - macCenter.x,
-    TOP_Y - macBBWorld.min.y + 0.01,
-    DESK.z - macCenter.z,
-  );
+  macbook.position.set(DESK.x - macCenter.x, TOP_Y - macBBWorld.min.y + 0.01, DESK.z - macCenter.z);
   macbook.updateMatrixWorld();
 
   macbook.traverse((o) => {
@@ -124,14 +100,7 @@ export const buildDesk = async (caseData: CaseData, handlers: Handlers) => {
     bg.addColorStop(1, "#08110e");
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, w, h);
-    const glow = ctx.createRadialGradient(
-      w * 0.15,
-      -20,
-      10,
-      w * 0.15,
-      -20,
-      w * 0.7,
-    );
+    const glow = ctx.createRadialGradient(w * 0.15, -20, 10, w * 0.15, -20, w * 0.7);
     glow.addColorStop(0, "rgba(240,184,75,0.28)");
     glow.addColorStop(1, "rgba(240,184,75,0)");
     ctx.fillStyle = glow;
@@ -172,21 +141,15 @@ export const buildDesk = async (caseData: CaseData, handlers: Handlers) => {
   const aim = new THREE.Vector3(DESK.x, TOP_Y + 1.0, DESK.z); // titik tengah tutup, perlu disesuaikan
   const ray = new THREE.Raycaster(from, aim.clone().sub(from).normalize());
   const hit = ray.intersectObject(lidMesh, false)[0];
-  if (!hit || !hit.face)
-    throw new Error("Permukaan tutup layar tidak terkena raycast");
+  if (!hit || !hit.face) throw new Error("Permukaan tutup layar tidak terkena raycast");
 
-  const normal = hit.face.normal
-    .clone()
-    .transformDirection(lidMesh.matrixWorld);
+  const normal = hit.face.normal.clone().transformDirection(lidMesh.matrixWorld);
 
   const SCREEN_W = 1.45; // lebar tampilan, naikkan jika kurang lebar
   const SCREEN_H = 0.95; // tinggi tampilan (sekitar 16:10)
   const SCREEN_OFFSET_Y = -0.4; // negatif = turun, positif = naik
 
-  const screen = new THREE.Mesh(
-    new THREE.PlaneGeometry(SCREEN_W, SCREEN_H),
-    new THREE.MeshBasicMaterial({ map: screenTex, side: THREE.DoubleSide }),
-  );
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(SCREEN_W, SCREEN_H), new THREE.MeshBasicMaterial({ map: screenTex, side: THREE.DoubleSide }));
   screen.position.copy(hit.point).addScaledVector(normal, 0.01);
   screen.position.y += SCREEN_OFFSET_Y;
   screen.lookAt(screen.position.clone().add(normal));
@@ -265,13 +228,12 @@ export const buildDesk = async (caseData: CaseData, handlers: Handlers) => {
         pages.push({
           tag: "Status",
           title: "Kasus ditutup",
-          body:
-            caseData.report?.successMessage ??
-            "Hasil kueri sudah sesuai dengan target tugas.",
+          body: caseData.report?.successMessage ?? "Hasil kueri sudah sesuai dengan target tugas.",
           kind: "status",
           stamp: caseData.report ? "DITERIMA" : "TERPECAHKAN",
         });
       }
+      handlers.playSound("slide", { durationMs: 500 });
       handlers.openDoc({
         title: `Berkas kasus: ${caseData.title}`,
         body: String(caseData.briefing),
@@ -342,15 +304,9 @@ export const buildDesk = async (caseData: CaseData, handlers: Handlers) => {
   const rod = (a: THREE.Vector3, b: THREE.Vector3, r: number) => {
     const dir = new THREE.Vector3().subVectors(b, a);
     const len = dir.length();
-    const m = new THREE.Mesh(
-      new THREE.CylinderGeometry(r, r, len, 16),
-      lampMetal,
-    );
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 16), lampMetal);
     m.position.copy(a).addScaledVector(dir, 0.5);
-    m.quaternion.setFromUnitVectors(
-      new THREE.Vector3(0, 1, 0),
-      dir.normalize(),
-    );
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
     m.castShadow = true;
     lamp.add(m);
   };
@@ -364,10 +320,7 @@ export const buildDesk = async (caseData: CaseData, handlers: Handlers) => {
   };
 
   // Dasar lampu
-  const base = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.22, 0.3, 0.06, 40),
-    lampMetal,
-  );
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 0.06, 40), lampMetal);
   base.position.y = 0.03;
   base.castShadow = true;
   base.receiveShadow = true;
@@ -401,10 +354,7 @@ export const buildDesk = async (caseData: CaseData, handlers: Handlers) => {
   shade.position.set(0, -0.05, 0);
   shade.castShadow = true;
 
-  const bulb = new THREE.Mesh(
-    new THREE.SphereGeometry(0.08, 16, 12),
-    new THREE.MeshBasicMaterial({ color: 0xffe2a8 }),
-  );
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffe2a8 }));
   bulb.position.set(0, -0.12, 0);
 
   head.add(shade, bulb);

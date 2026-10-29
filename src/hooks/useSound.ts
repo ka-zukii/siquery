@@ -2,11 +2,11 @@
 import { useCallback, useRef } from "react";
 import { getAudioSettings } from "./audioSettings";
 
-type SoundType = "click" | "open" | "close" | "error" | "success" | "slide" | "hover";
+export type SoundType = "click" | "open" | "close" | "error" | "success" | "slide" | "hover";
 
 // File ada di public/audio/effect/. BASE_URL menjaga path tetap benar
 const SOUND_PATHS: Record<SoundType, string> = {
-  click: `${import.meta.env.BASE_URL}audio/effect/mouse-click.mp3`,
+  click: `${import.meta.env.BASE_URL}audio/effect/click.mp3`,
   open: "",
   close: "",
   error: "",

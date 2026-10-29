@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { CaseData } from "../../../types/case.types";
+import type { SoundType } from "../../../hooks/useSound";
 
 export interface DeskSceneProps {
   caseData: CaseData;
@@ -59,4 +60,5 @@ export interface Handlers {
   openDoc: (doc: DocContent) => void;
   enterPC: () => void;
   isSolved: () => boolean;
+  playSound: (type: SoundType, opts?: { durationMs?: number }) => void;
 }
