@@ -82,17 +82,31 @@ siquery/
 │   ├── models/              # Model 3D .glb: library, meja, macbook, rak, folder dokumen
 │   └── sql-wasm.wasm        # Binary sql.js
 ├── src/
-│   ├── cases/               # Data chapter, satu folder per chapter (story.ts)
-│   ├── components/          # Komponen UI utama (MainMenu, Gameflow, Deskscene, Desktop, ...)
-│   │   ├── desk-scene/      # Pembangun meja 3D dan konfigurasinya
-│   │   ├── desktop/         # Aplikasi di dalam desktop (UniMail, Notepad, Report, Music, dock)
-│   │   └── main-menu/       # Kartu chapter, panel audio, data contoh kueri
-│   ├── context/             # DatabaseContext, NotepadContext
-│   ├── engine/              # DatabaseEngine: wrapper sql.js (init, runQuery, reset)
-│   ├── hooks/               # useDatabase, useWindowManager, useBGM, useSound, audioSettings
-│   ├── types/               # Tipe CaseData, QueryResult, CaseReport, dan lainnya
-│   ├── utils/               # parseSchema, checkAnswer, sqlHighlight, inbox, macAnimations
 │   ├── App.tsx
+│   ├── main.tsx             # Entry point Vite
+│   ├── index.css            # Tailwind dan gaya global
+│   ├── assets/              # Gambar yang diimpor dari kode
+│   ├── content/             # Data tanpa logika
+│   │   ├── cases/           # Data chapter, satu folder per chapter (story.ts)
+│   │   ├── cheatSheet.ts    # Cheat sheet SQL di aplikasi Guide
+│   │   ├── demoQueries.ts   # Contoh kueri di menu utama
+│   │   └── tutorial.ts      # Teks tutorial
+│   ├── engine/              # DatabaseEngine: wrapper sql.js (init, runQuery, reset)
+│   ├── features/            # Satu folder per bagian permainan
+│   │   ├── flow/            # GameFlow: alur menu → meja 3D → PC
+│   │   ├── menu/            # Menu utama, kartu chapter, panel pratinjau terminal
+│   │   ├── desk-scene/      # Meja 3D (Three.js): pembangun, konfigurasi, DeskScene
+│   │   ├── desktop/         # Layar PC: Desktop, ikon, dock, jendela aplikasi
+│   │   ├── apps/            # Aplikasi di dalam desktop (UniMail, Notepad, Report, Guide)
+│   │   │   └── music/       # Pemutar musik: hooks, komponen panel, visual
+│   │   └── studio/          # DB Studio: SiQueryStudio dan SqlEditor
+│   ├── shared/              # Kode yang dipakai lintas fitur
+│   │   ├── audio/           # Pengaturan audio, useSound, useBGM, player
+│   │   ├── context/         # DatabaseContext, NotepadContext
+│   │   ├── hooks/           # useDatabase, useWindowManager
+│   │   ├── ui/              # OSWindow, DocViewer, SolvedNotice, DesktopOnlyGate
+│   │   └── utils/           # parseSchema, checkAnswer, sqlHighlight, inbox, macAnimations
+│   └── types/               # Tipe CaseData, QueryResult, CaseReport, dan lainnya
 │   ├── main.tsx             # Entry point Vite
 │   └── index.css            # Tailwind dan gaya global
 ├── index.html

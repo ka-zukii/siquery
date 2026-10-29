@@ -1,6 +1,6 @@
 import initSqlJs, { type Database, type QueryExecResult } from "sql.js";
 import sqlWasmUrl from "sql.js/dist/sql-wasm.wasm?url";
-import type { QueryResult } from "../types/case.types";
+import type { QueryResult } from "@/types/case.types";
 
 export class DatabaseEngine {
   private db: Database | null = null;
