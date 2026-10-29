@@ -10,6 +10,7 @@ import {
 
 interface DesktopIconsProps {
   onOpen: (id: string) => void;
+  unreadMail: number;
 }
 
 interface IconDef {
@@ -37,7 +38,6 @@ const ICONS: IconDef[] = [
     icon: faEnvelope,
     gradient: "linear-gradient(180deg,#7cc0ff 0%,#2f6fe0 100%)",
     glyphColor: "#ffffff",
-    badge: 2,
   },
   {
     id: "notepad",
@@ -55,7 +55,10 @@ const ICONS: IconDef[] = [
   },
 ];
 
-export const DesktopIcons: React.FC<DesktopIconsProps> = ({ onOpen }) => {
+export const DesktopIcons: React.FC<DesktopIconsProps> = ({
+  onOpen,
+  unreadMail,
+}) => {
   const [selected, setSelected] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -120,9 +123,9 @@ export const DesktopIcons: React.FC<DesktopIconsProps> = ({ onOpen }) => {
               )}
 
               {/* Lencana notifikasi */}
-              {item.badge !== undefined && (
+              {item.id === "unimail" && unreadMail > 0 && (
                 <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ff3b30] px-1.5 text-[11px] font-semibold leading-none text-white shadow-[0_0_0_2px_#0e1714]">
-                  {item.badge}
+                  {unreadMail}
                 </span>
               )}
             </div>

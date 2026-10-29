@@ -1,6 +1,9 @@
 // src/cases/06-missing-manuscript/story.ts
 import type { CaseData } from "../../types/case.types";
 
+const BRIEFING =
+  "Manuskrip kuno abad ke-15 'Codex Nusantara' lenyap tanpa jejak kerusakan fisik dari Ruang Koleksi Khusus Perpustakaan Universitas. Kartu akses Dr. Hendra dilaporkan hilang sehari sebelum kejadian. Telusuri database untuk mengetahui siapa yang memakai kartu itu, lalu isi formulir laporan.";
+
 export const missingManuscriptCase: CaseData = {
   id: "06-missing-manuscript",
   title: "The Missing Manuscript",
@@ -42,6 +45,25 @@ export const missingManuscriptCase: CaseData = {
       dateOrTag: "24 Okt 2026",
       content:
         "Dr. Hendra melaporkan kartu aksesnya (CRD-8801) hilang di ruang bimbingan skripsi Fakultas Sejarah setelah konsultasi dengan mahasiswa.",
+    },
+  ],
+
+  emails: [
+    {
+      id: "mail-briefing",
+      from: "head@library.univ.ac.id",
+      to: "detective@siquery.os",
+      subject: "Penting: Penyelidikan Kasus The Missing Manuscript",
+      date: "25 Okt 2026",
+      body: BRIEFING,
+    },
+    {
+      id: "mail-laporan",
+      from: "head@library.univ.ac.id",
+      to: "detective@siquery.os",
+      subject: "Setelah penyelidikan: kirim laporan",
+      date: "25 Okt 2026",
+      body: "Setelah pelaku dan kartunya teridentifikasi, kirim laporan lewat aplikasi Laporkan. Isi pelaku, kartu yang dipakai, dan buku yang dipinjam dengan benar.",
     },
   ],
 

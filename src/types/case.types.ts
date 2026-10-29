@@ -47,6 +47,15 @@ export interface CaseMeta {
   skills: string[];
 }
 
+export interface EmailItem {
+  id: string;
+  from: string;
+  to?: string;
+  subject: string;
+  date: string;
+  body: string;
+}
+
 export interface CaseData {
   id: string;
   title: string;
@@ -55,6 +64,7 @@ export interface CaseData {
   schemaSql: string;
   meta: CaseMeta;
   clues?: ClueItem[];
+  emails?: EmailItem[];
   hints: string[];
   /**
    * Kueri target. Jika hasil kueri pemain memuat semua baris dari hasil ini,

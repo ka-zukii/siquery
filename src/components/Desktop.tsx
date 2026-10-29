@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useWindowManager } from "../hooks/useWindowManager";
 import { useSound } from "../hooks/useSound";
 import type { CaseData } from "../types/case.types";
@@ -12,6 +12,7 @@ import {
 import { DesktopIcons } from "./desktop/components/DesktopIcons";
 import { DesktopAppWindows } from "./desktop/components/DesktopAppWindows";
 import { DesktopDock } from "./desktop/components/DesktopDock";
+import { getInbox } from "../utils/inbox";
 
 interface DesktopProps {
   caseData: CaseData;
@@ -31,6 +32,15 @@ export const Desktop: React.FC<DesktopProps> = ({ caseData, onExit }) => {
   const { playSound } = useSound();
   const [now, setNow] = useState(() => new Date());
   const [appleMenuOpen, setAppleMenuOpen] = useState(false);
+
+  const inbox = getInbox(caseData);
+  const [readMail, setReadMail] = useState<string[]>([]);
+  const markMailRead = useCallback(
+    (id: string) =>
+      setReadMail((prev) => (prev.includes(id) ? prev : [...prev, id])),
+    [],
+  );
+  const unreadMail = inbox.filter((m) => !readMail.includes(m.id)).length;
 
   const { windows, openWindow, closeWindow, minimizeWindow, focusWindow } =
     useWindowManager([
@@ -204,7 +214,7 @@ export const Desktop: React.FC<DesktopProps> = ({ caseData, onExit }) => {
         </div>
       </header>
 
-      <DesktopIcons onOpen={handleAppOpen} />
+      <DesktopIcons onOpen={handleAppOpen} unreadMail={unreadMail} />
 
       <DesktopAppWindows
         caseData={caseData}
@@ -213,6 +223,9 @@ export const Desktop: React.FC<DesktopProps> = ({ caseData, onExit }) => {
         onClose={handleAppClose}
         minimizeWindow={minimizeWindow}
         focusWindow={focusWindow}
+        inbox={inbox}
+        readMail={readMail}
+        onReadMail={markMailRead}
       />
 
       <DesktopDock windows={windows} onExit={onExit} onOpen={handleAppOpen} />

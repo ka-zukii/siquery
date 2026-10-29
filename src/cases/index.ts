@@ -4,12 +4,14 @@ import type { Chapter } from "../components/main-menu/types";
 import { pendaftaranAnggotaCase } from "./01-pendaftaran-anggota/story";
 import { kartuAktifCase } from "./02-kartu-aktif/story";
 import { missingManuscriptCase } from "./06-missing-manuscript/story";
+import { jejakPeminjamanCase } from "./03-jejak-peminjaman/story";
 
 /** Chapter yang sudah bisa dimainkan */
 export const CASES: CaseData[] = [
   pendaftaranAnggotaCase,
   kartuAktifCase,
   missingManuscriptCase,
+  jejakPeminjamanCase
 ].sort((a, b) => a.meta.number.localeCompare(b.meta.number));
 
 export const getCaseById = (id: string): CaseData =>
@@ -17,20 +19,6 @@ export const getCaseById = (id: string): CaseData =>
 
 /** Chapter yang belum dibuat, hanya tampil sebagai kartu "Segera hadir" */
 export const UPCOMING_CHAPTERS: Chapter[] = [
-  {
-    id: "03-jejak-peminjaman",
-    number: "03",
-    title: "Jejak Peminjaman",
-    subtitle: "Chapter 03: Jejak Peminjaman",
-    date: "Segera hadir",
-    location: "Meja Sirkulasi",
-    level: 3,
-    levelLabel: "Menengah",
-    description:
-      "Gabungkan data peminjaman dengan data anggota untuk melihat siapa yang terakhir memegang sebuah buku.",
-    skills: ["JOIN", "LEFT JOIN", "IS NULL"],
-    isAvailable: false,
-  },
   {
     id: "04-jam-jaga",
     number: "04",

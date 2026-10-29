@@ -281,25 +281,25 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onStartCase }) => {
             <header>{Wordmark}</header>
             <div className="sq-rise rounded-[10px] bg-paper p-6 text-ink shadow-[0_24px_50px_rgba(0,0,0,0.5)] sm:p-9">
               <h2 className="sq-display text-3xl font-bold">
-                Satu tiket, empat langkah
+                Empat langkah menutup kasus
               </h2>
               <ol className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {[
                   {
-                    t: "Terima tugas",
-                    d: "Buka tumpukan formulir di meja atau baca email masuk di layar komputer.",
+                    t: "Baca berkas",
+                    d: "Klik berkas kasus di meja untuk membaca briefing. Geser halamannya untuk melihat barang bukti dan petunjuk.",
                   },
                   {
-                    t: "Periksa berkas",
-                    d: "Klik KTM, struk, atau catatan tempel untuk menemukan petunjuk dan nilai yang dicari.",
+                    t: "Buka komputer",
+                    d: "Klik layar macbook. DB Studio menampilkan tabel dan isinya, UniMail untuk surat masuk, dan Catatan untuk menulis dugaanmu.",
                   },
                   {
                     t: "Tulis kueri",
-                    d: "Beralih ke monitor lalu ketik SELECT, INSERT, UPDATE, atau JOIN di terminal.",
+                    d: "Di Konsol SQL, tulis SELECT, JOIN, atau GROUP BY lalu tekan Jalankan kueri (Ctrl + Enter). Hasilnya harus sama dengan target tugas.",
                   },
                   {
-                    t: "Validasi hasil",
-                    d: "Jika data yang kembali cocok dengan target tugas, tiket ditutup dan hari berlanjut.",
+                    t: "Tutup kasus",
+                    d: "Kasus yang meminta hasil kueri selesai saat hasilnya cocok. Kasus yang meminta laporan selesai setelah kamu mengisi Laporkan lalu menekan Kirim laporan.",
                   },
                 ].map((s, i) => (
                   <li
