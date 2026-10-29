@@ -1,5 +1,7 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useWindowManager } from "../hooks/useWindowManager";
+import { useDb } from "../context/DatabaseContext";
+import { SolvedNotice } from "./SolvedNotice";
 import { useSound } from "../hooks/useSound";
 import type { CaseData } from "../types/case.types";
 import {
@@ -18,6 +20,8 @@ interface DesktopProps {
   caseData: CaseData;
   /** Dipanggil saat pemain meninggalkan komputer dan kembali ke meja 3D */
   onExit?: () => void;
+  /** Dipanggil dari notifikasi "Pilih chapter" setelah kasus selesai */
+  onChooseChapter?: () => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -28,10 +32,24 @@ interface DesktopProps {
 /* Komponen                                                             */
 /* ------------------------------------------------------------------ */
 
-export const Desktop: React.FC<DesktopProps> = ({ caseData, onExit }) => {
+export const Desktop: React.FC<DesktopProps> = ({
+  caseData,
+  onExit,
+  onChooseChapter,
+}) => {
   const { playSound } = useSound();
   const [now, setNow] = useState(() => new Date());
   const [appleMenuOpen, setAppleMenuOpen] = useState(false);
+
+  // Notifikasi selesai muncul di dalam laptop saat kasus baru saja terpecahkan.
+  // Saat laptop dibuka lagi di kasus yang sudah selesai, notifikasi tidak muncul ulang.
+  const { solved } = useDb();
+  const wasSolved = useRef(solved);
+  const [solvedOpen, setSolvedOpen] = useState(false);
+  useEffect(() => {
+    if (solved && !wasSolved.current) setSolvedOpen(true);
+    wasSolved.current = solved;
+  }, [solved]);
 
   const inbox = getInbox(caseData);
   const [readMail, setReadMail] = useState<string[]>([]);
@@ -49,6 +67,7 @@ export const Desktop: React.FC<DesktopProps> = ({ caseData, onExit }) => {
       { id: "notepad", title: "Catatan Investigasi" },
       { id: "report", title: "Laporkan Kasus" },
       { id: "music", title: "Musik" },
+      { id: "guide", title: "Panduan" },
     ]);
 
   // Jam di menubar berjalan
@@ -57,12 +76,12 @@ export const Desktop: React.FC<DesktopProps> = ({ caseData, onExit }) => {
     return () => clearInterval(t);
   }, []);
 
-
-  // Esc: tutup menu apel dulu; kalau tidak ada menu terbuka, berdiri dari
-  // komputer dan kembali ke meja 3D.
+  // Esc: tutup notifikasi dulu, lalu menu apel. Kalau tidak ada yang terbuka,
+  // berdiri dari komputer dan kembali ke meja 3D.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
+      if (solvedOpen) return; // SolvedNotice menangani Esc sendiri
       if (appleMenuOpen) {
         setAppleMenuOpen(false);
         return;
@@ -71,7 +90,7 @@ export const Desktop: React.FC<DesktopProps> = ({ caseData, onExit }) => {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onExit, appleMenuOpen]);
+  }, [onExit, appleMenuOpen, solvedOpen]);
 
   const handleAppOpen = (id: string) => {
     playSound("open");
@@ -231,6 +250,15 @@ export const Desktop: React.FC<DesktopProps> = ({ caseData, onExit }) => {
       />
 
       <DesktopDock windows={windows} onExit={onExit} onOpen={handleAppOpen} />
+
+      {/* Notifikasi kasus terpecahkan, tampil di layar laptop */}
+      {solvedOpen && (
+        <SolvedNotice
+          caseData={caseData}
+          onClose={() => setSolvedOpen(false)}
+          onChooseChapter={() => onChooseChapter?.()}
+        />
+      )}
     </div>
   );
 };

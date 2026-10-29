@@ -21,7 +21,6 @@ import { buildDesk } from "./desk-scene/buildDesk";
 import { easeInOutCubic } from "./desk-scene/desk-scene.helpers";
 import { DocViewer } from "./DocViewer";
 import { useDb } from "../context/DatabaseContext";
-import { SolvedNotice } from "./SolvedNotice";
 import { stopMusic } from "./desktop/music/player";
 import { useSound } from "../hooks/useSound";
 
@@ -38,7 +37,7 @@ export const DeskScene: React.FC<DeskSceneProps> = ({
   const [hoverLabel, setHoverLabel] = useState<string | null>(null);
   const [doc, setDoc] = useState<DocContent | null>(null);
 
-  const {playSound} = useSound();
+  const { playSound } = useSound();
 
   // Musik berhenti hanya saat keluar dari kasus (kembali ke menu)
   useEffect(() => () => stopMusic(), []);
@@ -46,11 +45,6 @@ export const DeskScene: React.FC<DeskSceneProps> = ({
   const { solved } = useDb();
   const solvedRef = useRef(solved);
   solvedRef.current = solved;
-
-  const [solvedOpen, setSolvedOpen] = useState(false);
-  useEffect(() => {
-    if (solved) setSolvedOpen(true);
-  }, [solved]);
 
   const cb = useRef({ onEnterPC, caseData });
   cb.current = { onEnterPC, caseData };
@@ -77,8 +71,8 @@ export const DeskScene: React.FC<DeskSceneProps> = ({
   }, [paused]);
 
   useEffect(() => {
-    sim.current.modalOpen = doc !== null || solvedOpen;
-  }, [doc, solvedOpen]);
+    sim.current.modalOpen = doc !== null;
+  }, [doc]);
 
   useEffect(() => {
     if (!doc) return;
@@ -443,15 +437,6 @@ export const DeskScene: React.FC<DeskSceneProps> = ({
 
       {/* Pembaca dokumen */}
       {doc && <DocViewer doc={doc} onClose={() => setDoc(null)} />}
-
-      {/* Notifikasi kasus terpecahkan */}
-      {solvedOpen && (
-        <SolvedNotice
-          caseData={caseData}
-          onClose={() => setSolvedOpen(false)}
-          onChooseChapter={onBack}
-        />
-      )}
     </div>
   );
 };

@@ -2,6 +2,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import { parseSchema } from "../utils/parseSchema";
 import { useDb, type HistoryItem } from "../context/DatabaseContext";
 import { SqlEditor } from "./SqlEditor";
+import { describeFeedback } from "../utils/checkAnswer";
+import {
+  isTutorialDone,
+  markTutorialDone,
+  tutorialStep,
+} from "./desktop/data/tutorial";
 import type { CaseData, QueryResult } from "../types/case.types";
 
 const FOCUS =
@@ -39,6 +45,7 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
     executeQuery,
     submitQuery,
     solved,
+    feedback,
     sqlDraft,
     updateDraft,
   } = useDb();
@@ -60,6 +67,15 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
   const setResult = (r: QueryResult | null) => updateDraft({ result: r });
   const setLocalError = (e: string | null) => updateDraft({ localError: e });
   const setActiveTable = (t: string | null) => updateDraft({ activeTable: t });
+
+  // Panduan awal hanya untuk chapter pertama dan hanya sekali
+  const [tutorialOpen, setTutorialOpen] = useState(
+    () => caseData.meta.number === "01" && !isTutorialDone(),
+  );
+  const dismissTutorial = () => {
+    markTutorialDone();
+    setTutorialOpen(false);
+  };
 
   useEffect(() => {
     if (!isReady) return;
@@ -112,10 +128,14 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
 
   const activeError = localError || dbError;
 
+  const ranQuery = history.length > 0;
+  const ranOk = history.some((h) => h.ok);
+  const step = tutorialOpen ? tutorialStep({ ranQuery, ranOk, solved }) : null;
+
   return (
     <div className="sql-app-layout grid h-full max-h-full grid-cols-[230px_1fr] overflow-hidden font-mono">
       {/* Sidebar skema dan riwayat */}
-      <aside className="os-sidebar no-scrollbar max-h-full overflow-y-auto border-r border-paper/10 bg-mac-sidebar p-[12px_10px]">
+      <aside className="os-sidebar os-scroll max-h-full overflow-y-auto border-r border-paper/10 bg-mac-sidebar p-[12px_10px]">
         <h3 className="os-panel-title m-[2px_6px_8px] font-sans text-[0.72rem] font-semibold text-mac-muted">
           Skema database
         </h3>
@@ -206,8 +226,8 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
       </aside>
 
       {/* Bagian utama */}
-      <main className="os-main flex h-full flex-col gap-3 overflow-y-auto bg-mac-solid p-3.5">
-        <section className="os-editor-section flex max-h-62.5 shrink-0 flex-col gap-2 overflow-y-auto">
+      <main className="os-main os-scroll flex h-full flex-col gap-3 overflow-y-auto bg-mac-solid p-3.5">
+        <section className="os-editor-section os-scroll flex max-h-62.5 shrink-0 flex-col gap-2 overflow-y-auto">
           <div className="os-toolbar flex items-center justify-between font-sans text-[0.8rem] text-mac-muted">
             <span className="font-medium text-paper/85">Konsol SQL</span>
             <div className="os-toolbar-actions flex items-center gap-2">
@@ -223,7 +243,11 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
               <button
                 onClick={handleRunQuery}
                 disabled={isLoading || !isReady}
-                className={`os-btn-run cursor-pointer rounded-md border-none bg-lamp p-[5px_14px] font-sans text-[0.78rem] font-semibold text-[#1d1608] shadow-[0_1px_2px_rgba(0,0,0,0.3)] transition-colors hover:bg-[#f6c765] active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS}`}
+                className={`os-btn-run cursor-pointer rounded-md border-none bg-lamp p-[5px_14px] font-sans text-[0.78rem] font-semibold text-[#1d1608] shadow-[0_1px_2px_rgba(0,0,0,0.3)] transition-colors hover:bg-[#f6c765] active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS} ${
+                  step?.highlightRun
+                    ? "ring-2 ring-lamp ring-offset-2 ring-offset-mac-solid animate-pulse"
+                    : ""
+                }`}
               >
                 {isLoading ? "Memuat database..." : "Jalankan kueri"}
               </button>
@@ -240,6 +264,21 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
           />
         </section>
 
+        {step && (
+          <div className="flex items-start justify-between gap-3 rounded-lg border border-lamp/50 bg-lamp/12 p-[10px_12px] font-sans text-[0.8rem] text-paper">
+            <p>
+              <b>Panduan.</b> {step.text}
+            </p>
+            <button
+              type="button"
+              onClick={dismissTutorial}
+              className={`shrink-0 cursor-pointer rounded-md border border-paper/25 px-2.5 py-1 text-[0.72rem] text-paper hover:border-paper/55 ${FOCUS}`}
+            >
+              Mengerti
+            </button>
+          </div>
+        )}
+
         {caseData.hints.length > 0 && (
           <div className="os-hint-box rotate-[-0.4deg] rounded-sm bg-sticky p-[9px_12px] font-sans text-[0.78rem] leading-snug text-[#3b2f08] shadow-[0_6px_14px_rgba(0,0,0,0.35)]">
             <b>Petunjuk:</b> {caseData.hints[0]}
@@ -250,6 +289,12 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
           {solved && (
             <div className="rounded-lg border border-[#28c840]/50 bg-[#28c840]/12 p-[10px_12px] font-sans text-[0.8rem] text-phosphor">
               <b>Tiket selesai.</b> Hasil kueri sesuai dengan target tugas.
+            </div>
+          )}
+
+          {!solved && feedback && !activeError && (
+            <div className="rounded-lg border border-lamp/50 bg-lamp/12 p-[10px_12px] font-sans text-[0.8rem] text-paper">
+              <b>Belum tepat.</b> {describeFeedback(feedback)}
             </div>
           )}
 
@@ -268,7 +313,7 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
 
           {!activeError && result && (
             <>
-              <div className="os-table-wrapper max-h-full flex-1 overflow-auto rounded-lg border border-paper/12 bg-screen">
+              <div className="os-table-wrapper os-scroll max-h-full flex-1 overflow-auto rounded-lg border border-paper/12 bg-screen">
                 {result.values.length === 0 ? (
                   <div className="os-empty p-3 font-sans text-[0.82rem] text-mac-muted">
                     Kueri berhasil dijalankan, tetapi datanya kosong.

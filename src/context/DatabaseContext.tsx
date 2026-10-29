@@ -6,7 +6,12 @@ import React, {
   type ReactNode,
 } from "react";
 import { useDatabase } from "../hooks/useDatabase";
-import { isSameResult } from "../utils/checkAnswer";
+import {
+  buildFeedback,
+  isSameResult,
+  type QueryFeedback,
+} from "../utils/checkAnswer";
+import { parseSchema } from "../utils/parseSchema";
 import type { QueryResult } from "../types/case.types";
 
 /** Satu kueri yang pernah dijalankan */
@@ -27,14 +32,6 @@ export interface SqlDraft {
   history: HistoryItem[];
 }
 
-const INITIAL_DRAFT: SqlDraft = {
-  query: "SELECT * FROM access_logs WHERE status = 'GRANTED';",
-  result: null,
-  localError: null,
-  activeTable: null,
-  history: [],
-};
-
 interface DatabaseContextType {
   isReady: boolean;
   isLoading: boolean;
@@ -47,6 +44,8 @@ interface DatabaseContextType {
   resetDb: () => void;
   /** Menandai tiket selesai, dipakai oleh formulir laporan */
   markSolved: () => void;
+  /** Seberapa dekat kueri terakhir dengan target. Null bila belum ada atau sudah benar. */
+  feedback: QueryFeedback | null;
   /** Isi editor SQL yang bertahan walau komputer ditutup */
   sqlDraft: SqlDraft;
   updateDraft: (patch: Partial<SqlDraft>) => void;
@@ -62,8 +61,19 @@ export const DatabaseProvider: React.FC<{
   const db = useDatabase(schemaSql);
   const [solved, setSolved] = useState(false);
   const markSolved = useCallback(() => setSolved(true), []);
+  const [feedback, setFeedback] = useState<QueryFeedback | null>(null);
 
-  const [sqlDraft, setSqlDraft] = useState<SqlDraft>(INITIAL_DRAFT);
+  // Kueri awal memakai tabel pertama dari kasus ini, bukan tabel dari kasus lain
+  const [sqlDraft, setSqlDraft] = useState<SqlDraft>(() => {
+    const firstTable = parseSchema(schemaSql)[0]?.name;
+    return {
+      query: firstTable ? `SELECT * FROM ${firstTable};` : "",
+      result: null,
+      localError: null,
+      activeTable: null,
+      history: [],
+    };
+  });
   const updateDraft = useCallback(
     (patch: Partial<SqlDraft>) => setSqlDraft((d) => ({ ...d, ...patch })),
     [],
@@ -72,10 +82,21 @@ export const DatabaseProvider: React.FC<{
   const submitQuery = useCallback(
     (query: string) => {
       const res = db.executeQuery(query);
-      if (res && answerSql && !solved) {
+
+      if (!res || res.error) {
+        setFeedback(null);
+        return res;
+      }
+
+      if (answerSql && !solved) {
         const expected = db.executeQuery(answerSql);
-        if (expected && isSameResult(res, expected)) {
-          setSolved(true);
+        if (expected) {
+          if (isSameResult(res, expected)) {
+            setSolved(true);
+            setFeedback(null);
+          } else {
+            setFeedback(buildFeedback(res, expected));
+          }
         }
       }
       return res;
@@ -88,6 +109,7 @@ export const DatabaseProvider: React.FC<{
     submitQuery,
     solved,
     markSolved,
+    feedback,
     sqlDraft,
     updateDraft,
   };

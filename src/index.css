@@ -110,15 +110,37 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Scrollbar tipis dan samar; lebih jelas saat kursor di atas area */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(127, 127, 127, 0.35) transparent;
+}
 *::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(127, 127, 127, 0.35);
+  border-radius: 999px;
+}
+*:hover::-webkit-scrollbar-thumb {
+  background: rgba(127, 127, 127, 0.6);
 }
 
-* {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+/* Petunjuk bahwa masih ada konten di bawah (diatur oleh utils/scrollHints.ts) */
+.os-scroll[data-more="true"] {
+  background-image: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.22),
+    rgba(0, 0, 0, 0) 40px
+  );
+  background-repeat: no-repeat;
+  background-position: bottom;
+  background-size: 100% 40px;
+  background-attachment: scroll;
 }
 
 /* Seleksi teks mengikuti warna lampu */
@@ -149,5 +171,16 @@ body {
   .animate-mac-close,
   .animate-mac-minimize {
     animation-duration: 0.01s !important;
+  }
+}
+
+/* Batang equalizer kecil untuk lagu yang sedang diputar (MusicApp) */
+@keyframes musicEq {
+  0%,
+  100% {
+    transform: scaleY(0.25);
+  }
+  50% {
+    transform: scaleY(1);
   }
 }

@@ -82,7 +82,11 @@ export const GameFlow: React.FC = () => {
                 transitionDuration: `${FADE_MS}ms`,
               }}
             >
-              <Desktop caseData={caseData} onExit={() => setPhase("desk")} />
+              <Desktop
+                caseData={caseData}
+                onExit={() => setPhase("desk")}
+                onChooseChapter={() => setPhase("menu")}
+              />
             </div>
           )}
         </DatabaseProvider>

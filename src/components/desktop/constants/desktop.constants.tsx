@@ -10,6 +10,7 @@ import {
   faNoteSticky,
   faWifi,
   faMusic,
+  faBook,
   type IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
 
@@ -62,6 +63,13 @@ export const DOCK_APPS: DockApp[] = [
     icon: faMusic,
     glyphColor: "#ffffff",
     tile: "linear-gradient(160deg,#ff6b8b 0%,#d7265a 100%)",
+  },
+  {
+    id: "guide",
+    label: "Panduan",
+    icon: faBook,
+    glyphColor: "#ffffff",
+    tile: "linear-gradient(160deg,#9b8cff 0%,#4b3fb5 100%)",
   },
 ];
 
