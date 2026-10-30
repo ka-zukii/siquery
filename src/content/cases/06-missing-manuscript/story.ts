@@ -11,8 +11,8 @@ export const missingManuscriptCase: CaseData = {
   meta: {
     number: "06",
     location: "Perpustakaan Universitas",
-    level: 5,
-    levelLabel: "Sangat sulit",
+    level: 3,
+    levelLabel: "Menengah",
     summary:
       "Manuskrip kuno 'Codex Nusantara' lenyap dari Ruang Koleksi Khusus. Telusuri semua jejak yang tersisa dan temukan pelakunya.",
     skills: ["JOIN", "SUBQUERY", "GROUP BY"],

@@ -59,10 +59,10 @@ export const suratTanpaNamaCase: CaseData = {
 
     INSERT INTO email_log VALUES
     (1, 'kepala@library.univ.ac.id',           'staf.sirkulasi@library.univ.ac.id', 'Jadwal rapat minggu ini',           '2026-10-28', '09:00:00'),
-    (2, 'rina.k@library.univ.ac.id',           'kepala@library.univ.ac.id',         'Kunci cadangan ruang koleksi',      '2026-10-28', '17:40:00'),
+    (2, 'rina.k@library.univ.ac.id',           'dimas.a@students.univ.ac.id',       'Kunci cadangan ruang koleksi',      '2026-10-28', '17:40:00'),
     (3, 'dimas.a@students.univ.ac.id',         'rina.k@library.univ.ac.id',         'Re: Kunci cadangan ruang koleksi',  '2026-10-28', '18:05:00'),
-    (4, 'anon.7731@mail.net',                  'dimas.a@students.univ.ac.id',       'Kunci cadangan ruang koleksi',      '2026-10-28', '21:50:00'),
-    (5, 'dimas.a@students.univ.ac.id',         'anon.7731@mail.net',                'Terima kasih, nanti malam',         '2026-10-28', '21:52:00'),
+    (4, 'dimas.a@students.univ.ac.id',         'anon.7731@mail.net',                'Kunci cadangan ruang koleksi',      '2026-10-28', '21:50:00'),
+    (5, 'anon.7731@mail.net',                  'dimas.a@students.univ.ac.id',       'Terima kasih, nanti malam',         '2026-10-28', '21:52:00'),
     (6, 'kepala@library.univ.ac.id',           'rina.k@library.univ.ac.id',         'Kunci cadangan sudah dicek',        '2026-10-27', '11:00:00');
   `,
 

@@ -8,8 +8,8 @@ export const denahTersembunyiCase: CaseData = {
   meta: {
     number: "05",
     location: "Ruang Arsip Denah",
-    level: 4,
-    levelLabel: "Sulit",
+    level: 3,
+    levelLabel: "Menengah",
     summary:
       "Denah lama ternyata dipinjam dengan cara yang tidak biasa. Susun ulang rangkaian peminjamannya.",
     skills: ["WITH", "CASE", "UNION"],

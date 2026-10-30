@@ -8,8 +8,8 @@ export const malamTerakhirCase: CaseData = {
   meta: {
     number: "10",
     location: "Ruang Koleksi Khusus",
-    level: 5,
-    levelLabel: "Sangat sulit",
+    level: 4,
+    levelLabel: "Sulit",
     summary:
       "Kunci cadangan sudah bocor, dan malam itu ruang koleksi dibuka sebentar. Susun semua petunjuk untuk menemukan dalangnya.",
     skills: ["JOIN", "SUBQUERY", "GROUP BY"],
@@ -96,7 +96,7 @@ export const malamTerakhirCase: CaseData = {
       {
         key: "pelaku",
         label: "Siapa dalang di balik bocornya kunci cadangan?",
-        hint: "Kunci dikirim dari satu orang, lalu seseorang lain masuk ruangan dengan kartunya sendiri.",
+        hint: "Cari siapa yang pertama kali mengirim kunci, lalu cek apakah ia sendiri masuk ruangan malam itu.",
         options: [
           { value: "rina", label: "Rina Kusuma" },
           { value: "dimas", label: "Dimas Anggara" },

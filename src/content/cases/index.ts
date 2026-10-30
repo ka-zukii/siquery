@@ -8,6 +8,20 @@ import { missingManuscriptCase } from "./06-missing-manuscript/story";
 import { jejakPeminjamanCase } from "./03-jejak-peminjaman/story";
 import { jamJagaCase } from "./04-jam-jaga/story";
 import { denahTersembunyiCase } from "./05-denah-tersembunyi/story";
+import { rakBerpindahCase } from "./07-rak-berpindah/story";
+import { dendaTakDibayarCase } from "./08-denda-tak-dibayar/story";
+import { suratTanpaNamaCase } from "./09-surat-tanpa-nama/story";
+import { malamTerakhirCase } from "./10-malam-terakhir/story";
+import { rakYangSunyiCase } from "./11-rak-yang-sunyi/story";
+import { dendaBertingkatCase } from "./12-denda-bertingkat/story";
+import { pembacaTeladanCase } from "./13-pembaca-teladan/story";
+import { bukuPasanganCase } from "./14-buku-pasangan/story";
+import { tigaMejaCase } from "./15-tiga-meja/story";
+import { dataBolongCase } from "./16-data-bolong/story";
+import { gudangTerlambatCase } from "./17-gudang-terlambat/story";
+import { tandaTanganGandaCase } from "./18-tanda-tangan-ganda/story";
+import { kembaliDuaKaliCase } from "./19-kembali-dua-kali/story";
+import { pemilikSebenarnyaCase } from "./20-pemilik-sebenarnya/story";
 
 /** Chapter yang sudah bisa dimainkan */
 export const CASES: CaseData[] = [
@@ -18,70 +32,27 @@ export const CASES: CaseData[] = [
   jejakPeminjamanCase,
   jamJagaCase,
   denahTersembunyiCase,
+  rakBerpindahCase,
+  dendaTakDibayarCase,
+  suratTanpaNamaCase,
+  malamTerakhirCase,
+  rakYangSunyiCase,
+  dendaBertingkatCase,
+  pembacaTeladanCase,
+  bukuPasanganCase,
+  tigaMejaCase,
+  dataBolongCase,
+  gudangTerlambatCase,
+  tandaTanganGandaCase,
+  kembaliDuaKaliCase,
+  pemilikSebenarnyaCase,
 ].sort((a, b) => a.meta.number.localeCompare(b.meta.number));
 
 export const getCaseById = (id: string): CaseData =>
   CASES.find((c) => c.id === id) ?? CASES[0];
 
-/** Chapter yang belum dibuat, hanya tampil sebagai kartu "Segera hadir" */
-export const UPCOMING_CHAPTERS: Chapter[] = [
-  {
-    id: "07-rak-berpindah",
-    number: "07",
-    title: "Rak yang Berpindah",
-    subtitle: "Chapter 07: Rak yang Berpindah",
-    date: "Segera hadir",
-    location: "Katalog Rak",
-    level: 3,
-    levelLabel: "Menengah",
-    description:
-      "Buku terus berpindah rak tanpa ada yang mencatatnya di kartu katalog. Temukan buku yang paling sering dipindah.",
-    skills: ["GROUP BY", "HAVING", "COUNT"],
-    isAvailable: false,
-  },
-  {
-    id: "08-denda-tak-dibayar",
-    number: "08",
-    title: "Denda yang Tak Pernah Dibayar",
-    subtitle: "Chapter 08: Denda yang Tak Pernah Dibayar",
-    date: "Segera hadir",
-    location: "Meja Pengembalian",
-    level: 3,
-    levelLabel: "Menengah",
-    description:
-      "Bendahara menemukan selisih denda. Tampilkan total denda yang belum dibayar untuk setiap anggota, termasuk yang tidak punya denda.",
-    skills: ["LEFT JOIN", "SUM", "COALESCE"],
-    isAvailable: false,
-  },
-  {
-    id: "09-surat-tanpa-nama",
-    number: "09",
-    title: "Surat Tanpa Nama",
-    subtitle: "Chapter 09: Surat Tanpa Nama",
-    date: "Segera hadir",
-    location: "Kotak Masuk Kepala",
-    level: 4,
-    levelLabel: "Sulit",
-    description:
-      "Kunci cadangan ruang koleksi terkirim ke alamat luar kampus. Telusuri jalur emailnya dari awal.",
-    skills: ["LIKE", "ORDER BY"],
-    isAvailable: false,
-  },
-  {
-    id: "10-malam-terakhir",
-    number: "10",
-    title: "Malam Terakhir",
-    subtitle: "Chapter 10: Malam Terakhir",
-    date: "Segera hadir",
-    location: "Ruang Koleksi Khusus",
-    level: 5,
-    levelLabel: "Sangat sulit",
-    description:
-      "Kunci sudah bocor dan ruang koleksi dibuka sebentar malam itu. Susun semua petunjuk untuk menemukan dalangnya.",
-    skills: ["JOIN", "SUBQUERY", "GROUP BY"],
-    isAvailable: false,
-  },
-];
+/** Chapter yang belum dibuat, hanya tampil sebagai kartu "Segera hadir". Saat ini kosong. */
+export const UPCOMING_CHAPTERS: Chapter[] = [];
 
 /** Ubah data kasus menjadi bentuk kartu di menu */
 export const caseToChapter = (c: CaseData): Chapter => ({

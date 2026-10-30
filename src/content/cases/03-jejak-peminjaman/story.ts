@@ -8,8 +8,8 @@ export const jejakPeminjamanCase: CaseData = {
   meta: {
     number: "03",
     location: "Meja Sirkulasi",
-    level: 3,
-    levelLabel: "Menengah",
+    level: 2,
+    levelLabel: "Dasar-menengah",
     summary:
       "Beberapa buku belum kembali ke rak. Gabungkan data peminjaman dengan data anggota untuk mengetahui siapa yang masih memegangnya.",
     skills: ["JOIN", "LEFT JOIN", "IS NULL"],

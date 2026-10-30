@@ -94,22 +94,27 @@ export const ReportApp: React.FC<ReportAppProps> = ({ report, caseTitle }) => {
   const handleSubmit = () => {
     if (solved) return;
 
+    // Hanya bagian yang kosong yang ditandai. Jawaban yang salah tidak
+    // ditunjuk satu per satu, supaya laporan tidak bisa diselesaikan dengan
+    // mencoba-coba setiap pilihan.
     const newErrors: Record<string, string> = {};
+    let missingCount = 0;
+    let wrongCount = 0;
     for (const f of report.fields) {
       if (!values[f.key]) {
         newErrors[f.key] = "Pilih salah satu jawaban.";
+        missingCount++;
       } else if (values[f.key] !== report.answer[f.key]) {
-        newErrors[f.key] = "Jawaban ini belum sesuai temuan.";
+        wrongCount++;
       }
     }
 
-    if (Object.keys(newErrors).length > 0) {
-      const missingCount = report.fields.filter((f) => !values[f.key]).length;
+    if (missingCount > 0 || wrongCount > 0) {
       setErrors(newErrors);
       setMessage(
         missingCount > 0
           ? "Masih ada bagian yang belum diisi."
-          : "Beberapa jawaban belum tepat. Periksa bagian yang ditandai.",
+          : "Ada jawaban yang belum tepat. Tinjau kembali buktimu sebelum mengirim lagi.",
       );
       playSound("error");
       return;

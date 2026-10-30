@@ -105,7 +105,7 @@ siquery/
 │   │   ├── context/         # DatabaseContext, NotepadContext
 │   │   ├── hooks/           # useDatabase, useWindowManager
 │   │   ├── ui/              # OSWindow, DocViewer, SolvedNotice, DesktopOnlyGate
-│   │   └── utils/           # parseSchema, checkAnswer, sqlHighlight, inbox, macAnimations
+│   │   └── utils/           # parseSchema, checkAnswer, sqlHighlight, inbox
 │   └── types/               # Tipe CaseData, QueryResult, CaseReport, dan lainnya
 │   ├── main.tsx             # Entry point Vite
 │   └── index.css            # Tailwind dan gaya global
