@@ -79,8 +79,8 @@ export const countMatchingRows = (
 export type QueryFeedback =
   | { kind: "empty" }
   | { kind: "extra"; playerRows: number; total: number }
-  | { kind: "partial"; matched: number; total: number }
-  | { kind: "none"; total: number }
+  | { kind: "partial"; matched: number; total: number; playerRows: number }
+  | { kind: "none"; total: number; playerRows: number }
   /** Semua baris sudah benar, tetapi urutannya belum */
   | { kind: "order" };
 
@@ -98,8 +98,16 @@ export const buildFeedback = (
   if (matched === total && playerRows > total) {
     return { kind: "extra", playerRows, total };
   }
-  if (matched > 0) return { kind: "partial", matched, total };
-  return { kind: "none", total };
+  if (matched > 0) return { kind: "partial", matched, total, playerRows };
+  return { kind: "none", total, playerRows };
+};
+
+/** Perbandingan jumlah baris, tanpa membocorkan isi jawabannya */
+const rowCountNote = (playerRows: number, total: number): string => {
+  const count = `Hasilmu punya ${playerRows} baris, target punya ${total}.`;
+  if (playerRows > total) return `${count} Kondisinya mungkin terlalu longgar.`;
+  if (playerRows < total) return `${count} Kondisinya mungkin terlalu ketat.`;
+  return `${count} Jumlahnya sudah sama, periksa kolom dan nilainya.`;
 };
 
 export const describeFeedback = (f: QueryFeedback): string => {
@@ -107,12 +115,21 @@ export const describeFeedback = (f: QueryFeedback): string => {
     case "empty":
       return "Kueri berjalan, tetapi hasilnya kosong. Periksa nama tabel, nama kolom, dan kondisi WHERE.";
     case "extra":
-      return `Semua baris yang dicari sudah ada, tetapi hasilmu punya ${f.playerRows} baris. Ada baris yang tidak seharusnya ikut. Periksa kembali kondisi filternya.`;
+      return `Semua baris yang dicari sudah ada, tetapi ada baris yang tidak seharusnya ikut. ${rowCountNote(
+        f.playerRows,
+        f.total,
+      )} Periksa kembali kondisi filternya.`;
     case "partial":
-      return `${f.matched} dari ${f.total} baris yang dicari sudah cocok. Periksa kondisi atau pengelompokannya untuk baris sisanya.`;
+      return `${f.matched} dari ${f.total} baris yang dicari sudah cocok. ${rowCountNote(
+        f.playerRows,
+        f.total,
+      )} Periksa kondisi atau pengelompokannya untuk baris sisanya.`;
     case "order":
       return "Semua baris sudah benar, tetapi urutannya belum sesuai. Periksa kolom dan arah pengurutan di ORDER BY.";
     case "none":
-      return "Belum ada baris yang cocok dengan target. Periksa lagi kolom yang ditampilkan dan kondisinya.";
+      return `Belum ada baris yang cocok dengan target. ${rowCountNote(
+        f.playerRows,
+        f.total,
+      )} Periksa lagi kolom yang ditampilkan dan kondisinya.`;
   }
 };

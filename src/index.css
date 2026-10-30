@@ -184,3 +184,16 @@ body {
     transform: scaleY(1);
   }
 }
+
+/* ---- Pengaturan tampilan dari menu Tampilan ---- */
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important;
+}
+
+html.text-large {
+  font-size: 112.5%;
+}

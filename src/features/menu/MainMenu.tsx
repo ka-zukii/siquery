@@ -1,6 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { CASES, UPCOMING_CHAPTERS, caseToChapter } from "@/content/cases";
-import { caseProgress, clearCaseProgress, isCaseSolved } from "@/content/progress";
+import {
+  caseProgress,
+  clearCaseProgress,
+  isCaseSolved,
+  readCompletedLessons,
+} from "@/content/progress";
+import type { CaseData } from "@/types/case.types";
+import { DisplaySettingsPanel } from "./components/DisplaySettingsPanel";
 import type { Chapter } from "./types";
 import { TerminalPreview } from "./components/TerminalPreview";
 import { CatalogCard } from "./components/CatalogCard";
@@ -18,6 +25,28 @@ interface MainMenuProps {
 }
 
 type ViewState = "main" | "chapters" | "howto" | "settings" | "credits";
+
+const HELP_TIPS = [
+  {
+    t: "Pratinjau tabel",
+    d: "Klik nama tabel di Skema database untuk melihat lima baris pertamanya, tanpa perlu menulis kueri.",
+  },
+  {
+    t: "Pesan error yang jelas",
+    d: "Kalau kueri gagal, pesannya dijelaskan dalam bahasa biasa, lengkap dengan saran nama kolom atau tabel yang mungkin dimaksud.",
+  },
+  {
+    t: "Hitungan baris",
+    d: "Jika jawabanmu belum tepat, terlihat berapa baris hasilmu dan berapa baris target. Dari situ kamu tahu apakah filternya terlalu longgar atau terlalu ketat.",
+  },
+  {
+    t: "Menu di laptop",
+    d: "Bilah di atas layar punya menu Ubah, Tampilan, Jendela, dan Bantuan. Panduan dan tur ulang ada di menu Bantuan.",
+  },
+];
+
+const lessonsStarted = (c: CaseData) =>
+  c.lessons?.length ? readCompletedLessons(c.id, c.lessons).length : 0;
 
 /* ------------------------------------------------------------------ */
 /* CSS lokal: font, kursor, dan penghormatan terhadap reduced motion    */
@@ -51,15 +80,29 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onStartCase }) => {
   const { playSound } = useSound();
   const prevChapterIndexRef = useRef(currentChapterIndex);
 
+  // Belum ada kasus yang selesai: chapter 00 diberi label "Mulai di sini"
+  const noneSolved = !CASES.some((c) => isCaseSolved(c.id));
+
   // Semua chapter diurutkan berdasarkan nomornya
   const chapters: Chapter[] = [
-    ...CASES.map((c) => ({ ...caseToChapter(c), progress: caseProgress(c) })),
+    ...CASES.map((c) => ({
+      ...caseToChapter(c),
+      progress: caseProgress(c),
+      badge:
+        c.meta.number === "00" && noneSolved && !isCaseSolved(c.id)
+          ? "Mulai di sini"
+          : undefined,
+    })),
     ...UPCOMING_CHAPTERS,
   ].sort((a, b) => a.number.localeCompare(b.number));
 
   // Ringkasan progres: berapa kasus selesai dan kasus mana yang berikutnya
   const solvedCount = CASES.filter((c) => isCaseSolved(c.id)).length;
   const nextCase = CASES.find((c) => !isCaseSolved(c.id));
+  // Kasus yang sedang dikerjakan (ada pelajaran selesai), atau kasus berikutnya
+  const resumeCase =
+    CASES.find((c) => !isCaseSolved(c.id) && lessonsStarted(c) > 0) ??
+    (solvedCount > 0 ? nextCase : undefined);
 
   const total = chapters.length;
   const WINDOW_SIZE = 5;
@@ -138,7 +181,13 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onStartCase }) => {
               <p className="mt-6 max-w-[34ch] text-[17px] leading-relaxed text-paper/80">Fokus ke layar. Periksa berkas di meja. Ketik kueri SQL untuk menyelesaikan tugas pustakawan.</p>
 
               <nav className="mt-9 flex max-w-sm flex-col gap-3" aria-label="Menu utama">
-                <button onClick={clickThen(() => setCurrentView("chapters"))} className={`${primaryBtn} justify-between text-left gap-2`} {...hoverSound}>
+                {resumeCase && (
+                  <button onClick={clickThen(() => onStartCase(resumeCase.id))} className={`${primaryBtn} justify-between text-left gap-2`} {...hoverSound}>
+                    <span>Lanjutkan</span>
+                    <span className="text-[13px] font-medium opacity-70">Kasus {resumeCase.meta.number}</span>
+                  </button>
+                )}
+                <button onClick={clickThen(() => setCurrentView("chapters"))} className={`${resumeCase ? ghostBtn : primaryBtn} justify-between text-left gap-2`} {...hoverSound}>
                   <span>Mulai shift</span>
                   <span className="text-[13px] font-medium opacity-70">Pilih kasus</span>
                 </button>
@@ -148,7 +197,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onStartCase }) => {
                 </button>
                 <button onClick={clickThen(() => setCurrentView("settings"))} className={`${ghostBtn} justify-between text-left gap-2`} {...hoverSound}>
                   <span>Pengaturan</span>
-                  <span className="text-[13px] opacity-60">Suara</span>
+                  <span className="text-[13px] opacity-60">Suara dan tampilan</span>
                 </button>
                 <button onClick={clickThen(() => setCurrentView("credits"))} className={`${ghostBtn} justify-between text-left gap-2`} {...hoverSound}>
                   <span>Kredit</span>
@@ -305,6 +354,17 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onStartCase }) => {
                   </li>
                 ))}
               </ol>
+
+              <h3 className="sq-display mt-9 border-t border-dashed border-ink/30 pt-7 text-2xl font-bold">Kalau bingung</h3>
+              <ul className="mt-5 grid gap-4 sm:grid-cols-2">
+                {HELP_TIPS.map((h) => (
+                  <li key={h.t} className="rounded-lg bg-ink/5 p-4">
+                    <h4 className="sq-display text-base font-bold">{h.t}</h4>
+                    <p className="mt-1.5 text-[14px] leading-relaxed text-ink/80">{h.d}</p>
+                  </li>
+                ))}
+              </ul>
+
               <button onClick={clickThen(() => setCurrentView("main"))} className={`mt-8 rounded-xl bg-ink px-6 py-3 text-[15px] font-semibold text-paper transition hover:bg-[#2b352f] ${FOCUS}`}>
                 Kembali ke menu
               </button>
@@ -338,7 +398,10 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onStartCase }) => {
         {currentView === "settings" && (
           <main className="my-auto flex flex-col gap-8 py-8">
             <header>{Wordmark}</header>
-            <AudioSettingsPanel onBack={() => setCurrentView("main")} />
+            <div className="flex flex-col gap-6">
+              <DisplaySettingsPanel />
+              <AudioSettingsPanel onBack={() => setCurrentView("main")} />
+            </div>
           </main>
         )}
 

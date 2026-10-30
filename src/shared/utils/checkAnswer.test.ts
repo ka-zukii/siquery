@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildFeedback,
+  describeFeedback,
   isSameOrderedResult,
   isSameResult,
 } from "@/shared/utils/checkAnswer";
@@ -52,5 +53,22 @@ describe("buildFeedback", () => {
 
   it("melaporkan kecocokan sebagian", () => {
     expect(buildFeedback(res([[1]]), res([[1], [2]])).kind).toBe("partial");
+  });
+});
+
+describe("describeFeedback", () => {
+  it("menyebut jumlah baris pemain dan target", () => {
+    const f = buildFeedback(res([[1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11], [12]]), res([[1], [2], [3], [4], [5]]));
+    expect(describeFeedback(f)).toMatch(/punya 12 baris, target punya 5/);
+  });
+
+  it("menandai kondisi terlalu longgar bila baris pemain lebih banyak", () => {
+    const f = buildFeedback(res([[1], [2], [3]]), res([[1], [2]]));
+    expect(describeFeedback(f)).toMatch(/terlalu longgar/);
+  });
+
+  it("menandai kondisi terlalu ketat bila baris pemain lebih sedikit", () => {
+    const f = buildFeedback(res([[1]]), res([[1], [2], [3]]));
+    expect(describeFeedback(f)).toMatch(/terlalu ketat/);
   });
 });

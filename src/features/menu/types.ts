@@ -12,5 +12,7 @@ export interface Chapter {
   isAvailable: boolean;
   /** Status progres pemain untuk kartu katalog */
   progress?: { done: boolean; label: string };
+  /** Label kecil di tab kartu, misalnya "Mulai di sini" */
+  badge?: string;
 }
 

@@ -243,10 +243,15 @@ export const buildDesk = async (caseData: CaseData, handlers: Handlers) => {
     setHover: makeHover(folder),
   });
 
-  /* ---- Kartu akses petugas ---- */
-  const idCard = new THREE.Group();
-  const cardBase = box(0.95, 0.02, 0.6, std("#efe6d0", 0.6));
-  const cardTex = makeCanvasTexture(512, 324, (ctx, w, h) => {
+  /* ---- Tiket tugas (berlaku di semua chapter) ---- */
+  // Ambil kalimat terakhir briefing sebagai target tugas.
+  const sentences =
+    caseData.briefing.match(/[^.!?]+[.!?]+/g)?.map((x) => x.trim()) ?? [caseData.briefing];
+  const target = sentences[sentences.length - 1] ?? caseData.briefing;
+
+  const ticket = new THREE.Group();
+  const ticketBase = box(0.95, 0.02, 0.6, std("#e8dcc0", 0.6));
+  const ticketTex = makeCanvasTexture(512, 324, (ctx, w, h) => {
     ctx.fillStyle = "#efe6d0";
     ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = "#15231e";
@@ -255,34 +260,41 @@ export const buildDesk = async (caseData: CaseData, handlers: Handlers) => {
     ctx.textBaseline = "middle";
     ctx.textAlign = "left";
     ctx.font = `700 28px ${DISPLAY}`;
-    ctx.fillText("Kartu Akses Petugas", 24, 36);
-    ctx.fillStyle = "rgba(29,36,32,0.18)";
-    ctx.fillRect(24, 100, 120, 150);
+    ctx.fillText(`Tiket Kasus ${caseData.meta.number}`, 24, 36);
+
     ctx.fillStyle = "#1d2420";
     ctx.textBaseline = "alphabetic";
-    ctx.font = `600 26px ${SANS}`;
-    ctx.fillText("Perpustakaan Kampus", 170, 130);
+    ctx.font = `700 26px ${DISPLAY}`;
+    ctx.fillText(clip(caseData.title, 28), 24, 120);
+    ctx.fillStyle = "rgba(29,36,32,0.25)";
+    ctx.fillRect(24, 140, w - 48, 2);
+
+    ctx.fillStyle = "#1d2420";
+    ctx.font = `500 22px ${SANS}`;
+    wrapText(ctx, clip(target, 110), 24, 180, w - 48, 30);
+
     ctx.fillStyle = "rgba(29,36,32,0.6)";
-    ctx.font = `400 22px ${MONO}`;
-    ctx.fillText("card_id tercatat di", 170, 176);
-    ctx.fillText("tabel access_logs", 170, 208);
+    ctx.font = `400 20px ${MONO}`;
+    ctx.fillText("Klik untuk cek status", 24, h - 24);
   });
-  const cardFace = texturedPlane(0.9, 0.57, cardTex);
-  cardFace.rotation.x = -Math.PI / 2;
-  cardFace.position.y = 0.0105;
-  idCard.add(cardBase, cardFace);
-  idCard.position.set(1.45, TOP_Y + 0.025 + 0.012, DESK.z + 0.55);
-  idCard.rotation.y = -0.3;
-  root.add(idCard);
+  const ticketFace = texturedPlane(0.9, 0.57, ticketTex);
+  ticketFace.rotation.x = -Math.PI / 2;
+  ticketFace.position.y = 0.0105;
+  ticket.add(ticketBase, ticketFace);
+  ticket.position.set(1.45, TOP_Y + 0.025 + 0.012, DESK.z + 0.55);
+  ticket.rotation.y = -0.3;
+  root.add(ticket);
   interactables.push({
-    group: idCard,
-    label: "Kartu akses petugas. Klik untuk memeriksa.",
+    group: ticket,
+    label: "Tiket tugas. Klik untuk cek status.",
     action: () =>
       handlers.openDoc({
-        title: "Kartu akses petugas",
-        body: "Nomor kartu pada kartu ini tercatat di tabel access_logs. Cocokkan dengan data anggota di tabel members untuk menelusuri siapa yang masuk ke sebuah ruangan.",
+        title: `Tiket tugas · Kasus ${caseData.meta.number}`,
+        body: `${target} Status tugas: ${
+          handlers.isSolved() ? "selesai." : "belum selesai. Jalankan kueri sesuai target lalu kirim laporan."
+        }`,
       }),
-    setHover: makeHover(idCard),
+    setHover: makeHover(ticket),
   });
 
   /* ---- Tumpukan buku (dekorasi) ---- */

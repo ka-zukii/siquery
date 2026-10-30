@@ -63,6 +63,11 @@ export const CatalogCard: React.FC<{
       {/* Tab penanda kartu */}
       <div className="sq-sans absolute -top-3.5 left-6 rounded-t-md bg-paper px-4 pb-1 pt-1.5 text-[12px] font-semibold text-ink shadow-[0_-4px_10px_rgba(0,0,0,0.25)]">
         Kasus {chapter.number}
+        {chapter.badge && (
+          <span className="ml-2 rounded bg-lamp px-1.5 py-0.5 text-[10px] font-bold text-[#1d1608]">
+            {chapter.badge}
+          </span>
+        )}
       </div>
 
       {/* Stempel status */}

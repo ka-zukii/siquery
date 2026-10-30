@@ -9,8 +9,9 @@ import {
   ExitIcon,
   WifiIcon,
   BatteryIcon,
-  MENU_ITEM,
 } from "./constants/desktop.constants";
+import { MenuBarDropdown, AboutDialog, type MenuEntry } from "./components/MenuBar";
+import { useDisplayPrefs } from "@/shared/display/useDisplayPrefs";
 import { DesktopIcons } from "./components/DesktopIcons";
 import { DesktopAppWindows } from "./components/DesktopAppWindows";
 import { DesktopDock } from "./components/DesktopDock";
@@ -51,6 +52,10 @@ export const Desktop: React.FC<DesktopProps> = ({
   const { playSound } = useSound();
   const [now, setNow] = useState(() => new Date());
   const [appleMenuOpen, setAppleMenuOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const { prefs: displayPrefs, update: updateDisplay } = useDisplayPrefs();
+  const editableRef = useRef<HTMLElement | null>(null);
 
   // Notifikasi selesai muncul di dalam laptop saat kasus baru saja terpecahkan.
   // Saat laptop dibuka lagi di kasus yang sudah selesai, notifikasi tidak muncul ulang.
@@ -136,7 +141,12 @@ export const Desktop: React.FC<DesktopProps> = ({
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       if (solvedOpen) return; // SolvedNotice menangani Esc sendiri
-      if (appleMenuOpen) {
+      if (aboutOpen) {
+        setAboutOpen(false);
+        return;
+      }
+      if (openMenu || appleMenuOpen) {
+        setOpenMenu(null);
         setAppleMenuOpen(false);
         return;
       }
@@ -144,7 +154,7 @@ export const Desktop: React.FC<DesktopProps> = ({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onExit, appleMenuOpen, solvedOpen]);
+  }, [onExit, appleMenuOpen, solvedOpen, openMenu, aboutOpen]);
 
   const handleAppOpen = (id: string) => {
     playSound("open");
@@ -162,6 +172,116 @@ export const Desktop: React.FC<DesktopProps> = ({
     .sort((a, b) => b[1].zIndex - a[1].zIndex);
   const activeId = visible[0]?.[0] ?? null;
   const activeTitle = activeId ? windows[activeId].title : "Meja Kerja";
+
+  /* ---- Menubar: pelacak editor aktif untuk menu Ubah ---- */
+  useEffect(() => {
+    const onFocusIn = (e: FocusEvent) => {
+      const t = e.target as HTMLElement;
+      if (t.matches?.("textarea, input[type='text'], [contenteditable='true']")) {
+        editableRef.current = t;
+      }
+    };
+    document.addEventListener("focusin", onFocusIn);
+    return () => document.removeEventListener("focusin", onFocusIn);
+  }, []);
+
+  // Perintah edit dijalankan pada editor terakhir yang difokuskan
+  const editAction = (cmd: string, value?: string) => {
+    const el = editableRef.current;
+    if (!el?.isConnected) return;
+    el.focus();
+    document.execCommand(cmd, false, value);
+  };
+
+  const pasteFromClipboard = () => {
+    navigator.clipboard
+      ?.readText()
+      .then((text) => editAction("insertText", text))
+      .catch(() => {});
+  };
+
+  const openWindowEntries: MenuEntry[] = Object.values(windows)
+    .filter((w) => w.isOpen)
+    .sort((a, b) => b.zIndex - a.zIndex)
+    .map((w) => ({
+      type: "item" as const,
+      label: w.isMinimized ? `${w.title} (diminimalkan)` : w.title,
+      check: w.id === activeId,
+      onSelect: () => openWindow(w.id),
+    }));
+
+  const menus: Record<string, MenuEntry[]> = {
+    Berkas: [
+      { type: "item", label: "Buka DB Studio", onSelect: () => handleAppOpen("siquery") },
+      { type: "item", label: "Buka Kotak Masuk", onSelect: () => handleAppOpen("unimail") },
+      { type: "item", label: "Buka Catatan Investigasi", onSelect: () => handleAppOpen("notepad") },
+      { type: "item", label: "Buka Laporan Kasus", onSelect: () => handleAppOpen("report") },
+      { type: "sep" },
+      {
+        type: "item",
+        label: "Tutup Jendela Aktif",
+        disabled: !activeId,
+        onSelect: () => {
+          if (activeId) handleAppClose(activeId);
+        },
+      },
+    ],
+    Ubah: [
+      { type: "item", label: "Batalkan", onSelect: () => editAction("undo") },
+      { type: "item", label: "Ulangi", onSelect: () => editAction("redo") },
+      { type: "sep" },
+      { type: "item", label: "Potong", onSelect: () => editAction("cut") },
+      { type: "item", label: "Salin", onSelect: () => editAction("copy") },
+      { type: "item", label: "Tempel", onSelect: pasteFromClipboard },
+      { type: "item", label: "Hapus", onSelect: () => editAction("delete") },
+      { type: "sep" },
+      { type: "item", label: "Pilih Semua", onSelect: () => editAction("selectAll") },
+    ],
+    Tampilan: [
+      {
+        type: "item",
+        label: "Kurangi Animasi",
+        check: displayPrefs.reduceMotion,
+        onSelect: () =>
+          updateDisplay({ reduceMotion: !displayPrefs.reduceMotion }),
+      },
+      {
+        type: "item",
+        label: "Teks Lebih Besar",
+        check: displayPrefs.largeText,
+        onSelect: () => updateDisplay({ largeText: !displayPrefs.largeText }),
+      },
+    ],
+    Jendela: [
+      ...(openWindowEntries.length
+        ? openWindowEntries
+        : [{ type: "item" as const, label: "Tidak ada jendela terbuka", disabled: true, onSelect: () => {} }]),
+      { type: "sep" },
+      {
+        type: "item",
+        label: "Minimalkan Jendela Aktif",
+        disabled: !activeId,
+        onSelect: () => {
+          if (activeId) minimizeWindow(activeId);
+        },
+      },
+      {
+        type: "item",
+        label: "Tutup Semua Jendela",
+        disabled: openWindowEntries.length === 0,
+        onSelect: () =>
+          Object.values(windows).forEach((w) => {
+            if (w.isOpen) closeWindow(w.id);
+          }),
+      },
+    ],
+    Bantuan: [
+      { type: "item", label: "Buka Panduan", onSelect: () => handleAppOpen("guide") },
+      { type: "item", label: "Putar Ulang Tur Meja", onSelect: replayTours },
+      { type: "sep" },
+      { type: "item", label: "Tentang SiQuery OS", onSelect: () => setAboutOpen(true) },
+    ],
+  };
 
   const dateLabel = now.toLocaleDateString("id-ID", {
     weekday: "short",
@@ -225,7 +345,10 @@ export const Desktop: React.FC<DesktopProps> = ({
                   <button
                     type="button"
                     role="menuitem"
-                    onClick={() => setAppleMenuOpen(false)}
+                    onClick={() => {
+                      setAppleMenuOpen(false);
+                      setAboutOpen(true);
+                    }}
                     className="flex w-full cursor-pointer items-center rounded-md px-2.5 py-1.5 text-left text-paper hover:bg-lamp hover:text-[#1d1608]"
                   >
                     Tentang SiQuery OS
@@ -258,11 +381,18 @@ export const Desktop: React.FC<DesktopProps> = ({
           <span className="px-2 py-0.5 font-bold text-paper">
             {activeTitle}
           </span>
-          <span className={MENU_ITEM}>Berkas</span>
-          <span className={MENU_ITEM}>Ubah</span>
-          <span className={MENU_ITEM}>Tampilan</span>
-          <span className={MENU_ITEM}>Jendela</span>
-          <span className={MENU_ITEM}>Bantuan</span>
+          {Object.keys(menus).map((name) => (
+            <MenuBarDropdown
+              key={name}
+              label={name}
+              entries={menus[name]}
+              isOpen={openMenu === name}
+              anyOpen={openMenu !== null}
+              onToggle={() => setOpenMenu((o) => (o === name ? null : name))}
+              onEnter={() => setOpenMenu(name)}
+              onClose={() => setOpenMenu(null)}
+            />
+          ))}
         </div>
 
         <div className="flex items-center gap-3">
@@ -305,6 +435,21 @@ export const Desktop: React.FC<DesktopProps> = ({
       />
 
       <DesktopDock windows={windows} onExit={onExit} onOpen={handleAppOpen} />
+
+      {/* Klik di luar menu bilah menu menutupnya */}
+      {(openMenu !== null || appleMenuOpen) && (
+        <button
+          type="button"
+          aria-label="Tutup menu"
+          tabIndex={-1}
+          className="fixed inset-0 z-90 cursor-default"
+          onClick={() => {
+            setOpenMenu(null);
+            setAppleMenuOpen(false);
+          }}
+        />
+      )}
+      {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
 
       {/* Notifikasi kasus terpecahkan, tampil di layar laptop */}
       {solvedOpen && (

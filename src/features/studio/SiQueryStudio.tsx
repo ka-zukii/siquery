@@ -33,6 +33,38 @@ const readLiveSchema = (
   });
 };
 
+/** Tabel hasil kueri, dipakai di pratinjau tabel */
+const ResultTable: React.FC<{ result: QueryResult }> = ({ result }) => (
+  <table className="os-table w-full border-collapse text-[0.8rem] whitespace-nowrap">
+    <thead>
+      <tr>
+        {result.columns.map((col: string, idx: number) => (
+          <th
+            key={`pv-th-${col}-${idx}`}
+            className="sticky top-0 z-10 border-b border-paper/12 bg-panel-hi p-[7px_12px] text-left font-sans text-[0.72rem] font-semibold text-lamp"
+          >
+            {col}
+          </th>
+        ))}
+      </tr>
+    </thead>
+    <tbody>
+      {result.values.map((row, rIdx) => (
+        <tr key={`pv-tr-${rIdx}`} className="even:bg-paper/3 hover:bg-lamp/12">
+          {row.map((val, cIdx) => (
+            <td
+              key={`pv-td-${rIdx}-${cIdx}`}
+              className="border-b border-paper/8 p-[7px_12px] text-left text-phosphor/90"
+            >
+              {val === null ? <i className="text-paper/30">NULL</i> : String(val)}
+            </td>
+          ))}
+        </tr>
+      ))}
+    </tbody>
+  </table>
+);
+
 export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
   caseData,
 }) => {
@@ -67,6 +99,13 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
   const setLocalError = (e: string | null) => updateDraft({ localError: e });
   const setActiveTable = (t: string | null) => updateDraft({ activeTable: t });
 
+  // Pratinjau tabel: 5 baris pertama, tidak dicatat ke riwayat dan tidak dinilai
+  const [preview, setPreview] = useState<{
+    name: string;
+    result: QueryResult;
+    total: number;
+  } | null>(null);
+
   useEffect(() => {
     if (!isReady) return;
     setLiveSchema(readLiveSchema(executeQuery));
@@ -74,6 +113,7 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
 
   // Menjalankan kueri sekaligus mencatatnya ke riwayat
   const runAndRecord = (text: string) => {
+    setPreview(null);
     const res = submitQuery(text);
     const ok = Boolean(res) && !res?.error;
     const entry: HistoryItem = {
@@ -96,6 +136,17 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
     if (res) {
       setResult(res);
     }
+  };
+
+  const handlePreview = (tableName: string) => {
+    const sample = executeQuery(`SELECT * FROM ${tableName} LIMIT 5`);
+    if (!sample || sample.error) return;
+    const count = executeQuery(`SELECT COUNT(*) FROM ${tableName}`);
+    setPreview({
+      name: tableName,
+      result: sample,
+      total: Number(count?.values[0]?.[0] ?? sample.values.length),
+    });
   };
 
   const handleQuickSelect = (tableName: string) => {
@@ -147,7 +198,8 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
             >
               <button
                 type="button"
-                onClick={() => handleQuickSelect(tb.name)}
+                onClick={() => handlePreview(tb.name)}
+                title="Klik untuk melihat pratinjau isi tabel"
                 className={`os-table-name flex w-full cursor-pointer items-center gap-2 rounded-md p-[4px_8px] text-left transition-colors ${FOCUS} ${
                   isActive
                     ? "bg-lamp/15 text-lamp"
@@ -288,7 +340,12 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
           </div>
         )}
 
-        <section data-tour="studio-result" className="os-result-section flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
+        <section
+          data-tour="studio-result"
+          className={`os-result-section flex flex-col gap-2 overflow-hidden ${
+            caseData.lessons?.length ? "h-80 shrink-0" : "min-h-0 flex-1"
+          }`}
+        >
           {solved && (
             <div className="rounded-lg border border-[#28c840]/50 bg-[#28c840]/12 p-[10px_12px] font-sans text-[0.8rem] text-phosphor">
               <b>Tiket selesai.</b> Hasil kueri sesuai dengan target tugas.
@@ -303,14 +360,52 @@ export const SiQueryStudio: React.FC<{ caseData: CaseData }> = ({
 
           {activeError && (
             <div className="os-error rounded-lg border border-mac-red/50 bg-mac-red/12 p-[10px_12px] font-sans text-[0.8rem] text-[#f0a08f]">
-              <b>Kueri gagal.</b> {explainSqlError(activeError)}
+              <b>Kueri gagal.</b> {explainSqlError(activeError, liveSchema)}
               <span className="mt-1 block font-mono text-[0.7rem] opacity-70">
                 {activeError}
               </span>
             </div>
           )}
 
-          {!activeError && !result && (
+          {preview && (
+            <div className="flex min-h-0 flex-1 flex-col gap-2 rounded-lg border border-lamp/35 bg-lamp/8 p-2.5">
+              <div className="flex shrink-0 items-center justify-between gap-2 font-sans text-[0.78rem] text-paper">
+                <span>
+                  <b>Pratinjau</b> tabel{" "}
+                  <code className="font-mono text-lamp">{preview.name}</code>
+                  {" · "}
+                  {preview.result.values.length} dari {preview.total} baris
+                </span>
+                <span className="flex shrink-0 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => handleQuickSelect(preview.name)}
+                    className={`cursor-pointer rounded px-2 py-0.5 text-[0.72rem] text-lamp hover:bg-lamp/15 ${FOCUS}`}
+                  >
+                    Buka di editor
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreview(null)}
+                    className={`cursor-pointer rounded px-2 py-0.5 text-[0.72rem] text-mac-muted hover:text-paper ${FOCUS}`}
+                  >
+                    Tutup
+                  </button>
+                </span>
+              </div>
+              <div className="os-table-wrapper os-scroll min-h-0 overflow-auto rounded-md border border-paper/12 bg-screen">
+                {preview.result.values.length === 0 ? (
+                  <div className="p-3 font-sans text-[0.82rem] text-mac-muted">
+                    Tabel ini masih kosong.
+                  </div>
+                ) : (
+                  <ResultTable result={preview.result} />
+                )}
+              </div>
+            </div>
+          )}
+
+          {!activeError && !result && !preview && (
             <div className="os-empty flex flex-1 items-center justify-center rounded-lg border border-dashed border-paper/15 p-4 text-center font-sans text-[0.82rem] text-mac-muted">
               Belum ada hasil. Pilih tabel di kiri atau jalankan kueri untuk
               melihat datanya.
